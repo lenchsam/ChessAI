@@ -6,8 +6,7 @@ public class Board : MonoBehaviour
     [SerializeField] private BoardSettings _boardSettings;
     [SerializeField] private GameObject _squarePrefab;
 
-    Dictionary<char, GameObject> _whitePieceDictionary;
-    Dictionary<char, GameObject> _blackPieceDictionary;
+    Dictionary<char, GameObject> _piecePrefabDictionary;
 
     [Header("Piece Prefabs")]
     [SerializeField] GameObject _whitePawnPrefab;
@@ -33,22 +32,22 @@ public class Board : MonoBehaviour
         _boardParent.name = "Board Squares";
         CreateBoard();
 
-        _whitePieceDictionary = new Dictionary<char, GameObject>() {
-        {'p', _whitePawnPrefab},
-        {'r', _whiteRookPrefab},
-        {'n', _whiteKnightPrefab},
-        {'b', _whiteBishopPrefab},
-        {'q', _whiteQueenPrefab},
-        {'k', _whiteKingPrefab}
-        };
+        //initialize piece dictionary
+        _piecePrefabDictionary = new Dictionary<char, GameObject>()
+        {
+            {'P', _whitePawnPrefab},
+            {'R', _whiteRookPrefab},
+            {'N', _whiteKnightPrefab},
+            {'B', _whiteBishopPrefab},
+            {'Q', _whiteQueenPrefab},
+            {'K', _whiteKingPrefab},
 
-        _blackPieceDictionary = new Dictionary<char, GameObject>() {
-        {'p', _blackPawnPrefab},
-        {'r', _blackRookPrefab},
-        {'n', _blackKnightPrefab},
-        {'b', _blackBishopPrefab},
-        {'q', _blackQueenPrefab},
-        {'k', _blackKingPrefab}
+            {'p', _blackPawnPrefab},
+            {'r', _blackRookPrefab},
+            {'n', _blackKnightPrefab},
+            {'b', _blackBishopPrefab},
+            {'q', _blackQueenPrefab},
+            {'k', _blackKingPrefab},
         };
 
         //uppercase = white lowercase = black
@@ -121,10 +120,9 @@ public class Board : MonoBehaviour
                 else
                 {
                     col++;
-                    // Place piece at (current file, row)
                     Vector3 position = new Vector3(col - 1, row);
                     Debug.Log($"Placing piece {c} at position {position}");
-                    // Instantiate piece based on character 'c' at position}
+                   
                     Instantiate(CharToPiece(c), position, Quaternion.identity);
 
                 }
@@ -133,9 +131,6 @@ public class Board : MonoBehaviour
     }
     GameObject CharToPiece(char c)
     {
-        bool isWhite = char.IsUpper(c);
-        char lower = char.ToLower(c);
-
-        return isWhite ? _whitePieceDictionary[lower] : _blackPieceDictionary[lower];
+        return _piecePrefabDictionary[c];
     }
 }

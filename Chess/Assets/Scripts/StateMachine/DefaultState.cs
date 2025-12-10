@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,17 +12,18 @@ public class DefaultState : IState
     public void Enter()
     {
         Debug.Log("entered default state");
-        //throw new System.NotImplementedException();
     }
 
     public void Exit()
     {
-        //throw new System.NotImplementedException();
+        Debug.Log("exited default state");
     }
 
     public void OnCellClicked()
     {
         Debug.Log("Clicked");
-        //throw new System.NotImplementedException();
+        //raycast to find clicked cell
+
+        //if the cell has a piece of the players color pick it up
     }
 }
