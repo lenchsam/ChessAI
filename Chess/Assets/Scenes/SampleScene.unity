@@ -200,7 +200,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.50980395, g: 0.3529412, b: 0.21568628, a: 0}
+  m_BackGroundColor: {r: 0.6509804, g: 0.37254903, b: 0.22745098, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -463,8 +463,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ad40694255fbe7468f041302584f94a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
-  squarePrefab: {fileID: 5732358793313240025, guid: 1529259b34fbc5c4fbaf03dd8857ed66, type: 3}
+  _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
+  _squarePrefab: {fileID: 5732358793313240025, guid: 1529259b34fbc5c4fbaf03dd8857ed66, type: 3}
+  _whitePawnPrefab: {fileID: 0}
+  _whiteRookPrefab: {fileID: 0}
+  _whiteKnightPrefab: {fileID: 0}
+  _whiteBishopPrefab: {fileID: 0}
+  _whiteKingPrefab: {fileID: 0}
+  _whiteQueenPrefab: {fileID: 0}
+  _blackPawnPrefab: {fileID: 5942927153608321201, guid: c466e875db82ecf4e92a089425b5b609, type: 3}
+  _blackRookPrefab: {fileID: 7057831956999344460, guid: ef3861ca85591a746b97eb3cc53f2de3, type: 3}
+  _blackKnightPrefab: {fileID: 8208472007236858515, guid: 4b35d67fea34396458201539db33ae90, type: 3}
+  _blackBishopPrefab: {fileID: 4485689788318617136, guid: 6eb413bc40dcb684e91230d6aaba6ed4, type: 3}
+  _blackKingPrefab: {fileID: 4015442752413349584, guid: 829b89466b4847b469916b0e054a8c35, type: 3}
+  _blackQueenPrefab: {fileID: 1830880953799335642, guid: 7c65933066f2dde4ab2edee3c7d6c348, type: 3}
 --- !u!4 &1777018108
 Transform:
   m_ObjectHideFlags: 0

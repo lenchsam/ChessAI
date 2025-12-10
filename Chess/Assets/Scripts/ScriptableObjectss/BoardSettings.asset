@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73140b32c6794514a897523e71890e83, type: 3}
   m_Name: BoardSettings
   m_EditorClassIdentifier: 
-  whiteColor: {r: 1, g: 1, b: 1, a: 1}
-  blackColor: {r: 0, g: 0, b: 0, a: 1}
+  whiteColor: {r: 0.9529412, g: 0.8980392, b: 0.78431374, a: 1}
+  blackColor: {r: 0.54901963, g: 0.28627452, b: 0.19215687, a: 1}
