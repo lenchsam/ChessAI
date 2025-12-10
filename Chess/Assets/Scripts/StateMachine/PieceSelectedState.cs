@@ -1,4 +1,3 @@
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 public class PieceSelectedState : IState
@@ -19,12 +18,12 @@ public class PieceSelectedState : IState
 
     public void Enter()
     {
-        Debug.Log("entered piece selected state");
+
     }
 
     public void Exit()
     {
-        Debug.Log("exited piece selected state");
+
     }
 
     public void UpdateState()
@@ -37,9 +36,9 @@ public class PieceSelectedState : IState
         int x = Mathf.RoundToInt(mouseWorld.x);
         int y = Mathf.RoundToInt(mouseWorld.y);
 
+        //outside of the board
         if (x < 0 || x >= 8 || y < 0 || y >= 8)
         {
-            Debug.Log("outside the board!");
             return;
         }
 

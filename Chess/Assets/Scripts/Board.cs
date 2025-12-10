@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -150,8 +149,17 @@ public class Board : MonoBehaviour
         //remove any captured piece
         if (board[newPos.x, newPos.y] != '\0')
         {
-            GameObject capturedPiece = _pieceObjects[newPos.x, newPos.y];
-            Destroy(capturedPiece);
+            if (board[newPos.x, newPos.y] == board[oldPos.x, oldPos.y])
+            {
+                pieceObj.transform.position = new Vector3(newPos.x, newPos.y, -1);
+                Debug.Log("Cannot capture your own piece!");
+                return;
+            }
+            else
+            {
+                GameObject capturedPiece = _pieceObjects[newPos.x, newPos.y];
+                Destroy(capturedPiece);
+            }
         }
 
         //add piece to new position in board array
