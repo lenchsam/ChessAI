@@ -149,9 +149,10 @@ public class Board : MonoBehaviour
         //remove any captured piece
         if (board[newPos.x, newPos.y] != '\0')
         {
-            if (board[newPos.x, newPos.y] == board[oldPos.x, oldPos.y])
+            //if same colour then cannot capture
+            if (_pieceObjects[newPos.x, newPos.y].tag == _pieceObjects[newPos.x, newPos.y].tag)
             {
-                pieceObj.transform.position = new Vector3(newPos.x, newPos.y, -1);
+                pieceObj.transform.position = new Vector3 (oldPos.x, oldPos.y, -1);
                 Debug.Log("Cannot capture your own piece!");
                 return;
             }

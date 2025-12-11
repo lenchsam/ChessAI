@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1131269616874684841}
   m_Layer: 0
   m_Name: chess_king_black_0
-  m_TagString: Untagged
+  m_TagString: Black
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

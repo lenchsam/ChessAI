@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3282769416508953860}
   m_Layer: 0
   m_Name: chess_pawn_black_0
-  m_TagString: Untagged
+  m_TagString: Black
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
