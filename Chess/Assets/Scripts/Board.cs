@@ -150,7 +150,8 @@ public class Board : MonoBehaviour
         if (board[newPos.x, newPos.y] != '\0')
         {
             //if same colour then cannot capture
-            if (_pieceObjects[newPos.x, newPos.y].tag == _pieceObjects[newPos.x, newPos.y].tag)
+            //TODO: change this to check move is valid not just colour
+            if (_pieceObjects[oldPos.x, oldPos.y].tag == _pieceObjects[newPos.x, newPos.y].tag)
             {
                 pieceObj.transform.position = new Vector3 (oldPos.x, oldPos.y, -1);
                 Debug.Log("Cannot capture your own piece!");
