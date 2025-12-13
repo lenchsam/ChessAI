@@ -47,7 +47,7 @@ public class PieceSelectedState : IState
 
             //drop piece
             Vector2Int roundedCoords = new Vector2Int(Mathf.RoundToInt(mouseWorld.x), Mathf.RoundToInt(mouseWorld.y));
-            _playerController.BoardScript.MovePiece(_pieceCoords, roundedCoords, _selectedPiece);
+            //_playerController.BoardScript.MovePiece(_pieceCoords, roundedCoords, _selectedPiece);
             _playerController.ChangeState(new DefaultState(_playerController));
         }
     }

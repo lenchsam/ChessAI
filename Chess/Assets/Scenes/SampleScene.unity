@@ -371,9 +371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   IsPlayerWhite: 1
-  OnCellClicked:
-    m_PersistentCalls:
-      m_Calls: []
+  BoardScript: {fileID: 0}
 --- !u!4 &1585080428
 Transform:
   m_ObjectHideFlags: 0
@@ -445,6 +443,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1777018108}
   - component: {fileID: 1777018107}
+  - component: {fileID: 1777018109}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -466,18 +465,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
   _squarePrefab: {fileID: 5732358793313240025, guid: 1529259b34fbc5c4fbaf03dd8857ed66, type: 3}
-  _whitePawnPrefab: {fileID: 7283956173578177627, guid: 032bde0f1c8746744930efebad6d22a3, type: 3}
-  _whiteRookPrefab: {fileID: 4012072069766657114, guid: bd5b9f742b81a1f4995dbf883c75bc46, type: 3}
-  _whiteKnightPrefab: {fileID: 2550831843250272707, guid: 3e84bf5297ada974481d7fc88702a6d5, type: 3}
-  _whiteBishopPrefab: {fileID: 6622570312529989374, guid: a110e0fc9676dad4fad382400487b85c, type: 3}
-  _whiteKingPrefab: {fileID: 8196486960150705038, guid: 22b617de0922c524e83eeb30f3ec68f7, type: 3}
-  _whiteQueenPrefab: {fileID: 3961326812455563398, guid: cab4784be7d379247bb28f5a43073d41, type: 3}
-  _blackPawnPrefab: {fileID: 5942927153608321201, guid: c466e875db82ecf4e92a089425b5b609, type: 3}
-  _blackRookPrefab: {fileID: 7057831956999344460, guid: ef3861ca85591a746b97eb3cc53f2de3, type: 3}
-  _blackKnightPrefab: {fileID: 8208472007236858515, guid: 4b35d67fea34396458201539db33ae90, type: 3}
-  _blackBishopPrefab: {fileID: 4485689788318617136, guid: 6eb413bc40dcb684e91230d6aaba6ed4, type: 3}
-  _blackKingPrefab: {fileID: 4015442752413349584, guid: 829b89466b4847b469916b0e054a8c35, type: 3}
-  _blackQueenPrefab: {fileID: 1830880953799335642, guid: 7c65933066f2dde4ab2edee3c7d6c348, type: 3}
+  _piecePrefabs:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &1777018108
 Transform:
   m_ObjectHideFlags: 0
@@ -493,6 +493,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1777018109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1777018106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67befe428fea2a468fb5a033e1a96a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BitBoardArray: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
