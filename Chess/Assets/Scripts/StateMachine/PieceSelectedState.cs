@@ -28,26 +28,28 @@ public class PieceSelectedState : IState
 
     public void UpdateState()
     {
-        Vector2 mouseScreenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
-        Vector2 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
+        Vector3 mouseScreenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+        Vector3 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
 
         _selectedPiece.transform.position = new Vector3(mouseWorld.x, mouseWorld.y, -2);
 
-        int x = Mathf.RoundToInt(mouseWorld.x);
-        int y = Mathf.RoundToInt(mouseWorld.y);
-
-        //outside of the board
-        if (x < 0 || x >= 8 || y < 0 || y >= 8)
-        {
-            return;
-        }
-
         if (UnityEngine.InputSystem.Mouse.current.leftButton.wasReleasedThisFrame)
         {
+            int x = Mathf.RoundToInt(mouseWorld.x);
+            int y = Mathf.RoundToInt(mouseWorld.y);
 
-            //drop piece
-            Vector2Int roundedCoords = new Vector2Int(Mathf.RoundToInt(mouseWorld.x), Mathf.RoundToInt(mouseWorld.y));
-            //_playerController.BoardScript.MovePiece(_pieceCoords, roundedCoords, _selectedPiece);
+            if (x < 0 || x >= 8 || y < 0 || y >= 8)
+            {
+                _selectedPiece.transform.position = new Vector3(_pieceCoords.x, _pieceCoords.y, -1);
+                _playerController.ChangeState(new DefaultState(_playerController));
+                return;
+            }
+
+            Vector2Int newCoords = new Vector2Int(x, y);
+
+            _playerController.BoardScript.MovePieceVisual(_pieceCoords, newCoords);
+            _playerController.BoardScript.Bitboards.MovePiece(_pieceCoords, newCoords);
+
             _playerController.ChangeState(new DefaultState(_playerController));
         }
     }

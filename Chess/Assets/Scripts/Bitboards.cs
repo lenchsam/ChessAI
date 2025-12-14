@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -61,10 +62,50 @@ public class Bitboards
             UpdateTotalBitboards();
         }
     }
+
     public Piece GetPieceOnSquare(int squareIndex)
     {
         return _boardSquares[squareIndex];
     }
+
+    public void MovePiece(Vector2Int from, Vector2Int to)
+    {
+        if(from == to) return;
+
+        //get square indexes
+        int fromIndex = from.y * 8 + from.x;
+        int toIndex = to.y * 8 + to.x;
+
+        //bitmaskk
+        ulong fromBit = 1UL << fromIndex;
+        ulong toBit = 1UL << toIndex;
+
+        //combined mask for moving
+        ulong moveMask = fromBit | toBit;
+
+        Piece movingPiece = _boardSquares[fromIndex];
+
+        //captures
+        Piece targetPiece = _boardSquares[toIndex];
+
+        if (targetPiece != Piece.None)
+        {
+            //removes catured piece from bitboard
+            //~ = not operator
+            //e.g. 1111 & ~0010 -> 1111 & 1101 -> 1101 (Bit 2 is cleared)
+            _bitboards[(int)targetPiece] &= ~toBit;
+        }
+
+        //XOR to move the piece
+        //removes from the fromIndex and adds to the toIndex at the same time
+        _bitboards[(int)movingPiece] ^= moveMask;
+
+        _boardSquares[toIndex] = movingPiece;
+        _boardSquares[fromIndex] = Piece.None;
+
+        UpdateTotalBitboards();
+    }
+
     private void UpdateTotalBitboards()
     {
         _whitePiecesBB = 0;

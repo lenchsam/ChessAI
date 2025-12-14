@@ -22,8 +22,6 @@ public class Board : MonoBehaviour
     [SerializeField] private BoardSettings _boardSettings;
     [SerializeField] private GameObject _squarePrefab;
 
-    Dictionary<Piece, GameObject> _piecePrefabDictionary;
-
     private GameObject[,] _pieceObjects = new GameObject[8, 8];
     private GameObject[,] _squareObjects = new GameObject[8, 8];
 
@@ -33,14 +31,13 @@ public class Board : MonoBehaviour
     private GameObject _boardParent;
     private GameObject _piecesParent;
 
-
-    private Bitboards _bitboards;
+    public Bitboards Bitboards;
     private void Start()
     {
-        _bitboards = new Bitboards();
+        Bitboards = new Bitboards();
 
         //uppercase = white lowercase = black
-        _bitboards.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        Bitboards.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
         _boardParent = new GameObject();
         _boardParent.name = "Board Squares";
@@ -81,14 +78,15 @@ public class Board : MonoBehaviour
     {
         for(int i = 0; i < 64; i++)
         {
-            Piece piece = _bitboards.GetPieceOnSquare(i);
+            Piece piece = Bitboards.GetPieceOnSquare(i);
             if (piece != Piece.None)
             {
                 int x = i % 8;
                 int y = i / 8;
                 Vector2 position = new Vector2(x, y);
                 GameObject piecePrefab = GetPiecePrefab(piece);
-                Instantiate(piecePrefab, position, Quaternion.identity, _piecesParent.transform);
+                GameObject instance = Instantiate(piecePrefab, position, Quaternion.identity, _piecesParent.transform);
+                _pieceObjects[x, y] = instance;
             }
         }
     }
@@ -108,35 +106,27 @@ public class Board : MonoBehaviour
         return _pieceObjects[pos.x, pos.y];
     }
 
-    //public void MovePiece(Vector2Int oldPos, Vector2Int newPos, GameObject pieceObj)
-    //{
-    //    //remove any captured piece
-    //    if (board[newPos.x, newPos.y] != '\0')
-    //    {
-    //        //if same colour then cannot capture
-    //        //TODO: change this to check move is valid not just colour
-    //        if (_pieceObjects[oldPos.x, oldPos.y].tag == _pieceObjects[newPos.x, newPos.y].tag)
-    //        {
-    //            pieceObj.transform.position = new Vector3 (oldPos.x, oldPos.y, -1);
-    //            Debug.Log("Cannot capture your own piece!");
-    //            return;
-    //        }
-    //        else
-    //        {
-    //            GameObject capturedPiece = _pieceObjects[newPos.x, newPos.y];
-    //            Destroy(capturedPiece);
-    //        }
-    //    }
+    public void MovePieceVisual(Vector2Int oldCords, Vector2Int newCords)
+    {
 
-    //    //add piece to new position in board array
-    //    board[newPos.x, newPos.y] = board[oldPos.x, oldPos.y];
-    //    _pieceObjects[newPos.x, newPos.y] = pieceObj;
 
-    //    //remove piece from old position in board array
-    //    board[oldPos.x, oldPos.y] = '\0';
-    //    _pieceObjects[oldPos.x, oldPos.y] = null;
+        GameObject pieceToMove = _pieceObjects[oldCords.x, oldCords.y];
 
-    //    //snap piece to new position grid
-    //    pieceObj.transform.position = new Vector3(newPos.x, newPos.y, -1);
-    //}
+        //if they didnt move the piece
+        if (oldCords == newCords)
+        {
+            pieceToMove.transform.position = new Vector3(oldCords.x, oldCords.y, -1);
+            return;
+        }
+
+        pieceToMove.transform.position = new Vector3(newCords.x, newCords.y, -1);
+
+        if (_pieceObjects[newCords.x, newCords.y] != null)
+        {
+            Destroy(_pieceObjects[newCords.x, newCords.y]);
+        }
+
+        _pieceObjects[newCords.x, newCords.y] = _pieceObjects[oldCords.x, oldCords.y];
+        _pieceObjects[oldCords.x, oldCords.y] = null;
+    }
 }

@@ -39,18 +39,25 @@ public class DefaultState : IState
             return;
         }
 
-        //char pieceChar = _playerController.BitBoards.GetPieceAt(x, y);
+        Piece pieceChar = _playerController.BoardScript.Bitboards.GetPieceOnSquare((y * 8) + x);
 
-        //if (pieceChar != '\0')
-        //{
+        if (pieceChar != Piece.None)
+        {
+
+            //if belongs to the player
+            bool isWhitePiece = false;
 
         //    //if belongs to the player
-        //    bool isWhitePiece = char.IsUpper(pieceChar);
+            //if belongs to the player
+            if((int)pieceChar <= 5)
+            {
+                isWhitePiece = true;
+            }
 
-        //    if (isWhitePiece == _playerController.IsPlayerWhite)
-        //    {
-        //        _playerController.ChangeState(new PieceSelectedState(_playerController, new Vector2Int(x, y)));
-        //    }
-        //}
+            if (isWhitePiece == _playerController.IsPlayerWhite)
+            {
+                _playerController.ChangeState(new PieceSelectedState(_playerController, new Vector2Int(x, y)));
+            }
+        }
     }
 }
