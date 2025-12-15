@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor.Build;
 using UnityEngine;
 
 public class Bitboards
@@ -21,6 +22,12 @@ public class Bitboards
     {'b', (int)Piece.BlackBishop}, {'r', (int)Piece.BlackRook},
     {'q', (int)Piece.BlackQueen},  {'k', (int)Piece.BlackKing}
     };
+
+    //lookup tables of none sliding pieces
+    private ulong[] _knightLookup = new ulong[64];
+    private ulong[] _whitePawnLookup = new ulong[64];
+    private ulong[] _blackPawnLookup = new ulong[64];
+    private ulong[] _kingLookup = new ulong[64];
 
     public void FENtoBitboards(string FEN)
     {
@@ -120,4 +127,67 @@ public class Bitboards
         }
         _allPiecesBB = _whitePiecesBB | _blackPiecesBB;
     }
+
+    public void GenerateLookupTables()
+    {
+        ulong FILE_A = 0x0101010101010101;
+        ulong FILE_H = 0x8080808080808080;
+
+        ulong FILE_AB = FILE_A | (FILE_A << 1);
+        ulong FILE_GH = FILE_H | (FILE_H >> 1);
+
+
+        for (int squareIndex = 0; squareIndex < 64; squareIndex++)
+        {
+            ulong startBit = 1UL << squareIndex;
+            ulong possibleMoves = 0x0000000000000000;
+
+            //-----------------------------------------------------------------------Knights
+
+            //directions of attack e.g. NoWe = north west (doesnt include south or north initial as it just shifts the other direction for this.
+            int WoWe = 6;
+            int NoWe = 15;
+            int NoEa = 17;
+            int EaEa = 10;
+
+            //bitshifting to get all of the possible moves
+            possibleMoves = (startBit << NoEa & ~FILE_A)  |
+                            (startBit << NoWe & ~FILE_H)  |
+                            (startBit << EaEa & ~FILE_AB) |
+                            (startBit << WoWe & ~FILE_GH) |
+                            (startBit >> NoEa & ~FILE_H)  |
+                            (startBit >> NoWe & ~FILE_A)  |
+                            (startBit >> EaEa & ~FILE_GH) |
+                            (startBit >> WoWe & ~FILE_AB);
+
+            _knightLookup[squareIndex] = possibleMoves;
+
+            possibleMoves = 0x0000000000000000;
+            //-----------------------------------------------------------------------Pawns
+
+            //-----------------------------------------------------------------------King
+        }
+    }
+    public bool ValidateKnightMove(int startSquare, int targetSquare)
+    {
+        ulong targetSquareMask = 1UL << targetSquare;
+        ulong availableMovesMask = _knightLookup[startSquare];
+
+        //is the target valid
+        if((availableMovesMask & targetSquareMask) == 0UL)
+        {
+            //not a valid move
+            return false;
+        }
+
+        if((_whitePiecesBB & targetSquareMask) != 0UL)
+        {
+            //occupied by a friendly piece
+            return false;
+        }
+
+        //the move is legal if both previous checks pass
+        return true;
+    }
+
 }
