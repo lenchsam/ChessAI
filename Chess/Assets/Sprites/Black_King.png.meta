@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 3c69c1b8cabe2ff479eb3ec4e7223a3a
+guid: 0437038cc5abb96488116f7ff583bac8
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4594173861439699070
-    second: chess_pawn_white_0
+      213: -4309138983408942500
+    second: Black_King_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 160
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -139,13 +139,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: chess_pawn_white_0
+      name: Black_King_0
       rect:
         serializedVersion: 2
-        x: 115
-        y: 0
-        width: 282
-        height: 361
+        x: 108
+        y: 97
+        width: 744
+        height: 752
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -154,8 +154,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2878088c6373e30c0800000000000000
-      internalID: -4594173861439699070
+      spriteID: c524f16ececd234c0800000000000000
+      internalID: -4309138983408942500
       vertices: []
       indices: 
       edges: []
@@ -174,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      chess_pawn_white_0: -4594173861439699070
+      Black_King_0: -4309138983408942500
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

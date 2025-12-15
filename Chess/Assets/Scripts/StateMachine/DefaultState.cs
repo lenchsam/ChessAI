@@ -47,7 +47,6 @@ public class DefaultState : IState
             //if belongs to the player
             bool isWhitePiece = false;
 
-        //    //if belongs to the player
             //if belongs to the player
             if((int)pieceChar <= 5)
             {
