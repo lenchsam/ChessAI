@@ -109,7 +109,6 @@ public class Bitboards
 
             if (!isValid)
             {
-                Debug.Log("Invalid Knight Move");
                 return false;
             }
 
