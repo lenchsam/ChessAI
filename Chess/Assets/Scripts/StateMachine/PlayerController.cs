@@ -20,7 +20,10 @@ public class PlayerController : MonoBehaviour
     {
         _currentState.UpdateState();
     }
-
+    public void ToggleIsWhite()
+    {
+        IsPlayerWhite = !IsPlayerWhite;
+    }
     public void OnClick(InputAction.CallbackContext context)
     {
         if (!context.performed) {

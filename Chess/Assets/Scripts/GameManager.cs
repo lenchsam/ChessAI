@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
 {
     public Bitboards BitboardScript;
     [SerializeField] private Board _board;
+    [SerializeField] private PlayerController _playerController;
 
     public UnityEvent<Vector2Int, Vector2Int> OnMoveRequested = new UnityEvent<Vector2Int, Vector2Int>();
     void Awake()
@@ -31,6 +32,7 @@ public class GameManager : MonoBehaviour
         if (wasMoveMade)
         {
             _board.MovePieceVisual(from, to);
+            _playerController.ToggleIsWhite();
         }
         else
         {
