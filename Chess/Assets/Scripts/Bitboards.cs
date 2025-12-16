@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using UnityEditor.Build;
 using UnityEngine;
 
 public class Bitboards
@@ -126,6 +124,30 @@ public class Bitboards
             UpdateTotalBitboards();
             return true;
         }
+
+        if(movingPiece == Piece.BlackKing || movingPiece == Piece.WhiteKing)
+        {
+            bool isValid = ValidateKingMove(fromIndex, toIndex, movingPiece);
+
+            if (!isValid)
+            {
+                return false;
+            }
+
+            //capture
+            if (targetPiece != Piece.None) {
+                _bitboards[(int)targetPiece] &= ~toBit;
+            }
+
+            _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+
+            _boardSquares[toIndex] = movingPiece;
+            _boardSquares[fromIndex] = Piece.None;
+
+            UpdateTotalBitboards();
+            return true;
+
+        }
         return false;
     }
 
@@ -152,13 +174,13 @@ public class Bitboards
         ulong FILE_AB = FILE_A | (FILE_A << 1);
         ulong FILE_GH = FILE_H | (FILE_H >> 1);
 
-
+        //-----------------------------------------------------------------------Knights
         for (int squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             ulong startBit = 1UL << squareIndex;
             ulong possibleMoves = 0x0000000000000000;
 
-            //-----------------------------------------------------------------------Knights
+            
 
             //directions of attack e.g. NoWe = north west (doesnt include south or north initial as it just shifts the other direction for this.
             int WoWe = 6;
@@ -178,11 +200,25 @@ public class Bitboards
 
             _knightLookup[squareIndex] = possibleMoves;
 
-            possibleMoves = 0x0000000000000000;
-            //-----------------------------------------------------------------------Pawns
 
             //-----------------------------------------------------------------------King
+            possibleMoves = 0UL;
 
+            //up down
+            possibleMoves |= (startBit << 8);
+            possibleMoves |= (startBit >> 8);
+
+            // Horizontal
+            possibleMoves |= (startBit << 1) & ~FILE_H;
+            possibleMoves |= (startBit >> 1) & ~FILE_A;
+
+            // Diagonals
+            possibleMoves |= (startBit << 9) & ~FILE_H; // NE
+            possibleMoves |= (startBit << 7) & ~FILE_A; // NW
+            possibleMoves |= (startBit >> 7) & ~FILE_H; // SE
+            possibleMoves |= (startBit >> 9) & ~FILE_A; // SW
+
+            _kingLookup[squareIndex] = possibleMoves;
         }
     }
 
@@ -209,6 +245,35 @@ public class Bitboards
         }
 
         //the move is legal if both previous checks pass
+        return true;
+    }
+    public bool ValidateKingMove(int startSquare, int targetSquare, Piece movingPiece)
+    {
+        ulong targetMask = 1UL << targetSquare;
+
+        //is the target valid, if no return false
+        if ((_kingLookup[startSquare] & targetMask) == 0UL)
+        {
+            Debug.Log("illegal 1");
+            return false;
+        }
+
+        //is it occupied by a friendly piece
+        bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
+
+        if (isWhite)
+        {
+            if ((_whitePiecesBB & targetMask) != 0UL)
+                return false;
+        }
+        else
+        {
+            if ((_blackPiecesBB & targetMask) != 0UL)
+                return false;
+        }
+
+        //the move is legal if both previous checks pass
+        Debug.Log("legal move");
         return true;
     }
 }
