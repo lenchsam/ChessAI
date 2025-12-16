@@ -75,80 +75,55 @@ public class Bitboards
 
     public bool MovePiece(Vector2Int from, Vector2Int to)
     {
-        if(from == to) return false;
+        if (from == to) return false;
 
         //get square indexes
         int fromIndex = from.y * 8 + from.x;
         int toIndex = to.y * 8 + to.x;
 
-        //bitmaskk
         ulong fromBit = 1UL << fromIndex;
         ulong toBit = 1UL << toIndex;
 
-        //combined mask for moving
-        ulong moveMask = fromBit | toBit;
-
         Piece movingPiece = _boardSquares[fromIndex];
-
-        //captures
         Piece targetPiece = _boardSquares[toIndex];
 
-        if (targetPiece != Piece.None)
-        {
-            //removes catured piece from bitboard
-            //~ = not operator
-            //e.g. 1111 & ~0010 -> 1111 & 1101 -> 1101 (Bit 2 is cleared)
-            _bitboards[(int)targetPiece] &= ~toBit;
-        }
+        //validate move based on piece type
+        bool isValid = false;
 
         if (movingPiece == Piece.WhiteKnight || movingPiece == Piece.BlackKnight)
         {
-            bool isValid = ValidateKnightMove(fromIndex, toIndex, movingPiece);
-
-            if (!isValid)
-            {
-                return false;
-            }
-
-            //capture
-            if (targetPiece != Piece.None)
-            {
-                _bitboards[(int)targetPiece] &= ~toBit;
-            }
-
-            _bitboards[(int)movingPiece] ^= (fromBit | toBit);
-
-            _boardSquares[toIndex] = movingPiece;
-            _boardSquares[fromIndex] = Piece.None;
-
-            UpdateTotalBitboards();
-            return true;
+            isValid = ValidateKnightMove(fromIndex, toIndex, movingPiece);
         }
-
-        if(movingPiece == Piece.BlackKing || movingPiece == Piece.WhiteKing)
+        else if (movingPiece == Piece.BlackKing || movingPiece == Piece.WhiteKing)
         {
-            bool isValid = ValidateKingMove(fromIndex, toIndex, movingPiece);
-
-            if (!isValid)
-            {
-                return false;
-            }
-
-            //capture
-            if (targetPiece != Piece.None) {
-                _bitboards[(int)targetPiece] &= ~toBit;
-            }
-
-            _bitboards[(int)movingPiece] ^= (fromBit | toBit);
-
-            _boardSquares[toIndex] = movingPiece;
-            _boardSquares[fromIndex] = Piece.None;
-
-            UpdateTotalBitboards();
-            return true;
-
+            isValid = ValidateKingMove(fromIndex, toIndex, movingPiece);
         }
-        return false;
+        else if (movingPiece == Piece.WhitePawn || movingPiece == Piece.BlackPawn)
+        {
+            isValid = ValidatePawnMove(fromIndex, toIndex, movingPiece);
+        }
+
+        //if it didnt get validated
+        if (!isValid) return false;
+
+
+        //do move
+
+        //capture
+        if (targetPiece != Piece.None)
+        {
+            _bitboards[(int)targetPiece] &= ~toBit;
+        }
+
+        //update moving piece bitboard
+        _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+
+        _boardSquares[toIndex] = movingPiece;
+        _boardSquares[fromIndex] = Piece.None;
+
+        UpdateTotalBitboards();
+
+        return true;
     }
 
     private void UpdateTotalBitboards()
@@ -175,12 +150,11 @@ public class Bitboards
         ulong FILE_GH = FILE_H | (FILE_H >> 1);
 
         //-----------------------------------------------------------------------Knights
+
         for (int squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             ulong startBit = 1UL << squareIndex;
-            ulong possibleMoves = 0x0000000000000000;
-
-            
+            ulong possibleMoves = 0UL;
 
             //directions of attack e.g. NoWe = north west (doesnt include south or north initial as it just shifts the other direction for this.
             int WoWe = 6;
@@ -200,8 +174,8 @@ public class Bitboards
 
             _knightLookup[squareIndex] = possibleMoves;
 
-
             //-----------------------------------------------------------------------King
+
             possibleMoves = 0UL;
 
             //up down
@@ -219,6 +193,22 @@ public class Bitboards
             possibleMoves |= (startBit >> 9) & ~FILE_H; //SW
 
             _kingLookup[squareIndex] = possibleMoves;
+
+            //-----------------------------------------------------------------------Pawns
+
+            ///white pawns
+            ulong whiteAttacks = 0UL;
+            whiteAttacks |= (startBit << 9) & ~FILE_A; //NE
+            whiteAttacks |= (startBit << 7) & ~FILE_H; //NW
+
+            _whitePawnLookup[squareIndex] = whiteAttacks;
+
+            //black pawns
+            ulong blackAttacks = 0UL;
+            blackAttacks |= (startBit >> 7) & ~FILE_A; //SE
+            blackAttacks |= (startBit >> 9) & ~FILE_H; //SW
+
+            _blackPawnLookup[squareIndex] = blackAttacks;
         }
     }
 
@@ -273,6 +263,70 @@ public class Bitboards
 
         //the move is legal if both previous checks pass
         return true;
+    }
+
+    public bool ValidatePawnMove(int startSquare, int targetSquare, Piece movingPiece)
+    {
+        ulong targetMask = 1UL << targetSquare;
+        bool isWhite = (int)movingPiece == (int)Piece.WhitePawn;
+
+
+        bool isTargetOccupied = false;
+        if ((_allPiecesBB & targetMask) != 0UL) isTargetOccupied = true;
+
+        //captures
+        if (isWhite)
+        {
+            //check if target is in attack lookup
+            if ((_whitePawnLookup[startSquare] & targetMask) != 0UL)
+            {
+                //if enemy piece is there
+                if ((_blackPiecesBB & targetMask) != 0UL) return true;
+                return false;
+            }
+        }
+        else
+        {
+            if ((_blackPawnLookup[startSquare] & targetMask) != 0UL)
+            {
+                if ((_whitePiecesBB & targetMask) != 0UL) return true;
+                return false;
+            }
+        }
+
+        //push pawns, this is not in lookup tables
+        if (isTargetOccupied) return false;
+
+        if (isWhite)
+        {
+            if (targetSquare == startSquare + 8) return true;
+
+            //double push only on home rank
+            if (targetSquare == startSquare + 16)
+            {
+                if (startSquare >= 8 && startSquare <= 15)
+                {
+                    ulong skipMask = 1UL << (startSquare + 8);
+                    if ((_allPiecesBB & skipMask) == 0UL) return true;
+                }
+            }
+        }
+        else
+        {
+            if (targetSquare == startSquare - 8) return true;
+
+            //double push only on home rank
+            if (targetSquare == startSquare - 16)
+            {
+                if (startSquare >= 48 && startSquare <= 55)
+                {
+                    ulong skipMask = 1UL << (startSquare - 8);
+                    if ((_allPiecesBB & skipMask) == 0UL) return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
 
