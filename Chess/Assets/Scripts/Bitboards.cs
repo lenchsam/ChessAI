@@ -205,18 +205,18 @@ public class Bitboards
             possibleMoves = 0UL;
 
             //up down
-            possibleMoves |= (startBit << 8);
-            possibleMoves |= (startBit >> 8);
+            possibleMoves |= (startBit << 8); // North
+            possibleMoves |= (startBit >> 8); // South
 
-            // Horizontal
-            possibleMoves |= (startBit << 1) & ~FILE_H;
-            possibleMoves |= (startBit >> 1) & ~FILE_A;
+            //horizontal
+            possibleMoves |= (startBit << 1) & ~FILE_A;
+            possibleMoves |= (startBit >> 1) & ~FILE_H;
 
-            // Diagonals
-            possibleMoves |= (startBit << 9) & ~FILE_H; // NE
-            possibleMoves |= (startBit << 7) & ~FILE_A; // NW
-            possibleMoves |= (startBit >> 7) & ~FILE_H; // SE
-            possibleMoves |= (startBit >> 9) & ~FILE_A; // SW
+            //diagonal
+            possibleMoves |= (startBit << 9) & ~FILE_A; //NE
+            possibleMoves |= (startBit << 7) & ~FILE_H; //NW
+            possibleMoves |= (startBit >> 7) & ~FILE_A; //SE
+            possibleMoves |= (startBit >> 9) & ~FILE_H; //SW
 
             _kingLookup[squareIndex] = possibleMoves;
         }
@@ -254,7 +254,6 @@ public class Bitboards
         //is the target valid, if no return false
         if ((_kingLookup[startSquare] & targetMask) == 0UL)
         {
-            Debug.Log("illegal 1");
             return false;
         }
 
@@ -273,7 +272,6 @@ public class Bitboards
         }
 
         //the move is legal if both previous checks pass
-        Debug.Log("legal move");
         return true;
     }
 }
