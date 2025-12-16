@@ -47,8 +47,7 @@ public class PieceSelectedState : IState
 
             Vector2Int newCoords = new Vector2Int(x, y);
 
-            _playerController.BoardScript.MovePieceVisual(_pieceCoords, newCoords);
-            _playerController.BoardScript.Bitboards.MovePiece(_pieceCoords, newCoords);
+            _playerController.Game_Manager.OnMoveRequested?.Invoke(_pieceCoords, newCoords);
 
             _playerController.ChangeState(new DefaultState(_playerController));
         }

@@ -39,7 +39,7 @@ public class DefaultState : IState
             return;
         }
 
-        Piece pieceChar = _playerController.BoardScript.Bitboards.GetPieceOnSquare((y * 8) + x);
+        Piece pieceChar = _playerController.Game_Manager.BitboardScript.GetPieceOnSquare((y * 8) + x);
 
         if (pieceChar != Piece.None)
         {
@@ -48,7 +48,7 @@ public class DefaultState : IState
             bool isWhitePiece = false;
 
             //if belongs to the player
-            if((int)pieceChar <= 5)
+            if ((int)pieceChar <= 5)
             {
                 isWhitePiece = true;
             }

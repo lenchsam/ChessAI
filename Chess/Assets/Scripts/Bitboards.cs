@@ -75,9 +75,9 @@ public class Bitboards
         return _boardSquares[squareIndex];
     }
 
-    public void MovePiece(Vector2Int from, Vector2Int to)
+    public bool MovePiece(Vector2Int from, Vector2Int to)
     {
-        if(from == to) return;
+        if(from == to) return false;
 
         //get square indexes
         int fromIndex = from.y * 8 + from.x;
@@ -103,14 +103,31 @@ public class Bitboards
             _bitboards[(int)targetPiece] &= ~toBit;
         }
 
-        //XOR to move the piece
-        //removes from the fromIndex and adds to the toIndex at the same time
-        _bitboards[(int)movingPiece] ^= moveMask;
+        if (movingPiece == Piece.WhiteKnight || movingPiece == Piece.BlackKnight)
+        {
+            bool isValid = ValidateKnightMove(fromIndex, toIndex, movingPiece);
 
-        _boardSquares[toIndex] = movingPiece;
-        _boardSquares[fromIndex] = Piece.None;
+            if (!isValid)
+            {
+                Debug.Log("Invalid Knight Move");
+                return false;
+            }
 
-        UpdateTotalBitboards();
+            //capture
+            if (targetPiece != Piece.None)
+            {
+                _bitboards[(int)targetPiece] &= ~toBit;
+            }
+
+            _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+
+            _boardSquares[toIndex] = movingPiece;
+            _boardSquares[fromIndex] = Piece.None;
+
+            UpdateTotalBitboards();
+            return true;
+        }
+        return false;
     }
 
     private void UpdateTotalBitboards()
@@ -166,28 +183,34 @@ public class Bitboards
             //-----------------------------------------------------------------------Pawns
 
             //-----------------------------------------------------------------------King
+
         }
     }
-    public bool ValidateKnightMove(int startSquare, int targetSquare)
+
+    public bool ValidateKnightMove(int startSquare, int targetSquare, Piece movingPiece)
     {
-        ulong targetSquareMask = 1UL << targetSquare;
-        ulong availableMovesMask = _knightLookup[startSquare];
+        ulong targetMask = 1UL << targetSquare;
 
-        //is the target valid
-        if((availableMovesMask & targetSquareMask) == 0UL)
-        {
-            //not a valid move
+        //is the target valid, if no return false
+        if ((_knightLookup[startSquare] & targetMask) == 0UL)
             return false;
+
+        //is it occupied by a friendly piece
+        bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
+
+        if (isWhite)
+        {
+            if ((_whitePiecesBB & targetMask) != 0UL)
+                return false;
         }
-
-        if((_whitePiecesBB & targetSquareMask) != 0UL)
+        else
         {
-            //occupied by a friendly piece
-            return false;
+            if ((_blackPiecesBB & targetMask) != 0UL)
+                return false;
         }
 
         //the move is legal if both previous checks pass
         return true;
     }
-
 }
+

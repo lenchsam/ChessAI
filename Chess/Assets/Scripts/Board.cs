@@ -30,26 +30,15 @@ public class Board : MonoBehaviour
 
     private GameObject _boardParent;
     private GameObject _piecesParent;
-
-    public Bitboards Bitboards;
-    private void Start()
+    private void Awake()
     {
-        Bitboards = new Bitboards();
-
-        //uppercase = white lowercase = black
-        Bitboards.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
         _boardParent = new GameObject();
         _boardParent.name = "Board Squares";
 
         _piecesParent = new GameObject();
         _piecesParent.name = "Pieces";
-
-        CreateBoard();
-        DisplayPieces();
-
     }
-    void CreateBoard()
+    public void CreateBoard()
     {
         Color whiteMaterial = _boardSettings.whiteColor;
         Color blackMaterial = _boardSettings.blackColor;
@@ -74,11 +63,11 @@ public class Board : MonoBehaviour
             }
         }
     }
-    void DisplayPieces()
+    public void DisplayPieces(Bitboards bitboards)
     {
         for(int i = 0; i < 64; i++)
         {
-            Piece piece = Bitboards.GetPieceOnSquare(i);
+            Piece piece = bitboards.GetPieceOnSquare(i);
             if (piece != Piece.None)
             {
                 int x = i % 8;
@@ -108,8 +97,6 @@ public class Board : MonoBehaviour
 
     public void MovePieceVisual(Vector2Int oldCords, Vector2Int newCords)
     {
-
-
         GameObject pieceToMove = _pieceObjects[oldCords.x, oldCords.y];
 
         //if they didnt move the piece

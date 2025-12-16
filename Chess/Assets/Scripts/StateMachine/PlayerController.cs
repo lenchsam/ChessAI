@@ -7,14 +7,13 @@ public class PlayerController : MonoBehaviour
     private IState _currentState;
     public bool IsPlayerWhite = true;
 
+    public GameManager Game_Manager;
+
     public Board BoardScript;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (BoardScript == null)
-            BoardScript = FindFirstObjectByType<Board>();
-
         ChangeState(new DefaultState(this));
     }
     private void Update()
