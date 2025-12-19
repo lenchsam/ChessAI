@@ -24,6 +24,9 @@ public class GameManager : MonoBehaviour
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
+
+        ulong mask = BitboardScript.MaskRookAttacks(0); // D4
+        _board.ShowBitboardOverlay(mask, Color.green);
     }
 
     void OnMoveRequestedHandler(Vector2Int from, Vector2Int to)

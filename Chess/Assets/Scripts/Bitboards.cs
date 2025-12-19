@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Bitboards
 {
@@ -212,6 +213,56 @@ public class Bitboards
         }
     }
 
+    // MAGIC BITBOARDS
+    // code based on tord romstads implementation
+    public ulong MaskRookAttacks(int square)
+    {
+        ulong attacks = 0UL;
+
+        int rank = square / 8;
+        int file = square % 8;
+
+        //generate attacks
+        //up
+        for (int r = rank + 1; r <= 6; r++)
+            attacks |= 1UL << (r * 8 + file);
+
+        //down
+        for (int r = rank - 1; r >= 1; r--)
+            attacks |= 1UL << (r * 8 + file);
+
+        //left
+        for (int f = file - 1; f >= 1; f--)
+            attacks |= 1UL << (rank * 8 + f);
+
+        //right
+        for (int f = file + 1; f <= 6; f++)
+            attacks |= 1UL << (rank * 8 + f);
+
+        return attacks;
+    }
+
+    public void DebugBitboard(ulong bb, string label = "")
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        if (!string.IsNullOrEmpty(label))
+            sb.AppendLine(label);
+
+        for (int rank = 7; rank >= 0; rank--)
+        {
+            for (int file = 0; file < 8; file++)
+            {
+                int square = rank * 8 + file;
+                sb.Append(((bb >> square) & 1UL) == 1UL ? "1 " : ". ");
+            }
+            sb.AppendLine();
+        }
+
+        Debug.Log(sb.ToString());
+    }
+
+
     public bool ValidateKnightMove(int startSquare, int targetSquare, Piece movingPiece)
     {
         ulong targetMask = 1UL << targetSquare;
@@ -264,7 +315,6 @@ public class Bitboards
         //the move is legal if both previous checks pass
         return true;
     }
-
     public bool ValidatePawnMove(int startSquare, int targetSquare, Piece movingPiece)
     {
         ulong targetMask = 1UL << targetSquare;

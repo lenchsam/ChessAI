@@ -30,6 +30,10 @@ public class Board : MonoBehaviour
 
     private GameObject _boardParent;
     private GameObject _piecesParent;
+
+    //bitboard overlay
+    [SerializeField] private GameObject _highlightPrefab;
+    private List<GameObject> _activeHighlights = new List<GameObject>();
     private void Awake()
     {
         _boardParent = new GameObject();
@@ -116,4 +120,36 @@ public class Board : MonoBehaviour
         _pieceObjects[newCords.x, newCords.y] = _pieceObjects[oldCords.x, oldCords.y];
         _pieceObjects[oldCords.x, oldCords.y] = null;
     }
+
+    private void ClearHighlights()
+    {
+        foreach (var h in _activeHighlights)
+            Destroy(h);
+
+        _activeHighlights.Clear();
+    }
+    public void ShowBitboardOverlay(ulong bb, Color colour)
+    {
+        ClearHighlights();
+
+        for (int square = 0; square < 64; square++)
+        {
+            if (((bb >> square) & 1UL) == 0UL)
+                continue;
+
+            int x = square % 8;
+            int y = square / 8;
+
+            GameObject highlight = Instantiate(
+                _highlightPrefab,
+                new Vector3(x, y, -0.5f),
+                Quaternion.identity,
+                transform
+            );
+
+            highlight.GetComponent<SpriteRenderer>().color = colour;
+            _activeHighlights.Add(highlight);
+        }
+    }
+
 }
