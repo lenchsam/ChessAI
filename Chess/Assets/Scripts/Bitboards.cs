@@ -242,6 +242,29 @@ public class Bitboards
         return attacks;
     }
 
+    public ulong MaskBishopAttacks(int square)
+    {
+        ulong attacks = 0UL;
+        int rank = square / 8;
+        int file = square % 8;
+        //generate attacks
+        //northeast
+        for (int r = rank + 1, f = file + 1; r <= 6 && f <= 6; r++, f++)
+            attacks |= 1UL << (r * 8 + f);
+
+        //northwest
+        for (int r = rank + 1, f = file - 1; r <= 6 && f >= 1; r++, f--)
+            attacks |= 1UL << (r * 8 + f);
+
+        //southeast
+        for (int r = rank - 1, f = file + 1; r >= 1 && f <= 6; r--, f++)
+            attacks |= 1UL << (r * 8 + f);
+
+        //southwest
+        for (int r = rank - 1, f = file - 1; r >= 1 && f >= 1; r--, f--)
+            attacks |= 1UL << (r * 8 + f);
+        return attacks;
+    }
     public void DebugBitboard(ulong bb, string label = "")
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
