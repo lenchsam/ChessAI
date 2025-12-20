@@ -275,6 +275,10 @@ public class Bitboards
         {
             isValid = ValidateBishopMove(fromIndex, toIndex, movingPiece);
         }
+        else if (movingPiece == Piece.WhiteQueen || movingPiece == Piece.BlackQueen)
+        {
+            isValid = ValidateQueenMove(fromIndex, toIndex, movingPiece);
+        }
         else
         {
             //other pieces not implemented yet
@@ -765,11 +769,21 @@ public class Bitboards
 
         if ((possibleAttacks & targetMask) == 0UL) return false;
 
+        //is it occupied by a friendly piece
         bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
-        ulong friendlyPieces = isWhite ? _whitePiecesBB : _blackPiecesBB;
-        bool isOccupiedByFriendly = (friendlyPieces & targetMask) == 0UL;
 
-        return isOccupiedByFriendly;
+        if (isWhite)
+        {
+            if ((_whitePiecesBB & targetMask) != 0UL)
+                return false;
+        }
+        else
+        {
+            if ((_blackPiecesBB & targetMask) != 0UL)
+                return false;
+        }
+
+        return true;
     }
     private bool ValidateBishopMove(int startSquare, int targetSquare, Piece movingPiece)
     {
@@ -783,12 +797,56 @@ public class Bitboards
 
         if ((possibleAttacks & targetMask) == 0UL) return false;
 
+        //is it occupied by a friendly piece
         bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
-        ulong friendlyPieces = isWhite ? _whitePiecesBB : _blackPiecesBB;
 
-        bool isOccupiedByFriendly = (friendlyPieces & targetMask) == 0UL;
+        if (isWhite)
+        {
+            if ((_whitePiecesBB & targetMask) != 0UL)
+                return false;
+        }
+        else
+        {
+            if ((_blackPiecesBB & targetMask) != 0UL)
+                return false;
+        }
 
-        return isOccupiedByFriendly;
+        return true;
+    }
+    private bool ValidateQueenMove(int startSquare, int targetSquare, Piece movingPiece)
+    {
+        ulong targetMask = 1UL << targetSquare;
+
+        //rook attacks
+        ulong rookOccupancy = _allPiecesBB & _rookMasks[startSquare];
+        int rookIndex = (int)((rookOccupancy * _rookMagics[startSquare]) >> _rookShifts[startSquare]);
+        ulong rookAttacks = _rookAttackTable[startSquare][rookIndex];
+
+        //bishop attacks
+        ulong bishopOccupancy = _allPiecesBB & _bishopMasks[startSquare];
+        int bishopIndex = (int)((bishopOccupancy * _bishopMagics[startSquare]) >> _bishopShifts[startSquare]);
+        ulong bishopAttacks = _bishopAttackTable[startSquare][bishopIndex];
+
+        //combine
+        ulong queenAttacks = rookAttacks | bishopAttacks;
+
+        if ((queenAttacks & targetMask) == 0UL) return false;
+
+        //is it occupied by a friendly piece
+        bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
+
+        if (isWhite)
+        {
+            if ((_whitePiecesBB & targetMask) != 0UL)
+                return false;
+        }
+        else
+        {
+            if ((_blackPiecesBB & targetMask) != 0UL)
+                return false;
+        }
+
+        return true;
     }
 }
 
