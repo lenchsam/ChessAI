@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class Bitboards
 {
@@ -65,8 +66,8 @@ public class Bitboards
                 }
                 col++;
             }
-            UpdateTotalBitboards();
         }
+        UpdateTotalBitboards();
     }
 
     public Piece GetPieceOnSquare(int squareIndex)
@@ -103,6 +104,18 @@ public class Bitboards
         {
             isValid = ValidatePawnMove(fromIndex, toIndex, movingPiece);
         }
+        else if (movingPiece == Piece.WhiteRook || movingPiece == Piece.BlackRook)
+        {
+            isValid = ValidateRookMove(fromIndex, toIndex, movingPiece);
+        }else if (movingPiece == Piece.WhiteBishop || movingPiece == Piece.BlackBishop)
+        {
+            isValid = ValidateBishopMove(fromIndex, toIndex, movingPiece);
+        }
+        else
+        {
+            //other pieces not implemented yet
+            return false;
+        }
 
         //if it didnt get validated
         if (!isValid) return false;
@@ -120,7 +133,7 @@ public class Bitboards
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
 
         _boardSquares[toIndex] = movingPiece;
-        _boardSquares[fromIndex] = Piece.None;
+        _boardSquares[fromIndex] = Piece.None;;
 
         UpdateTotalBitboards();
 
@@ -215,7 +228,7 @@ public class Bitboards
 
     // MAGIC BITBOARDS
     // code based on tord romstads implementation
-    public ulong MaskRookAttacks(int square)
+    private ulong MaskRookAttacks(int square)
     {
         ulong attacks = 0UL;
 
@@ -241,8 +254,7 @@ public class Bitboards
 
         return attacks;
     }
-
-    public ulong MaskBishopAttacks(int square)
+    private ulong MaskBishopAttacks(int square)
     {
         ulong attacks = 0UL;
         int rank = square / 8;
@@ -266,9 +278,12 @@ public class Bitboards
         return attacks;
     }
 
+
+
+
     //function from sebastian lague
     //https://youtu.be/_vqlIPDR2TU?t=1905
-    public ulong[] CreateAllBlockerBitboards(ulong mask)
+    private ulong[] CreateAllBlockerBitboards(ulong mask)
     {
         List<int> moveSquareIndices = new();
         for (int i = 0; i < 64; i++)
@@ -295,6 +310,97 @@ public class Bitboards
         return blockerBitboards;
     }
 
+
+
+
+    //returns biboard of possible rook attacks
+    private ulong CalculateRookAttacks(int square, ulong blockers)
+    {
+        ulong attacks = 0;
+
+        int r = square / 8;
+        int f = square % 8;
+
+        //north
+        for (int r2 = r + 1; r2 < 8; r2++)
+        {
+            ulong bit = 1UL << (r2 * 8 + f);
+            attacks |= bit;
+            // If we hit a blocker cant go further.
+            if ((blockers & bit) != 0) break;
+        }
+
+        //east
+        for (int f2 = f + 1; f2 < 8; f2++)
+        {
+            ulong bit = 1UL << (r * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        //south
+        for (int r2 = r - 1; r2 >= 0; r2--)
+        {
+            ulong bit = 1UL << (r2 * 8 + f);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        //west
+        for (int f2 = f - 1; f2 >= 0; f2--)
+        {
+            ulong bit = 1UL << (r * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        return attacks;
+    }
+
+    private ulong CalculateBishopAttacks(int square, ulong blockers)
+    {
+        ulong attacks = 0;
+
+        int r = square / 8;
+        int f = square % 8;
+
+        // north-east
+        for (int r2 = r + 1, f2 = f + 1; r2 < 8 && f2 < 8; r2++, f2++)
+        {
+            ulong bit = 1UL << (r2 * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        // north-west
+        for (int r2 = r + 1, f2 = f - 1; r2 < 8 && f2 >= 0; r2++, f2--)
+        {
+            ulong bit = 1UL << (r2 * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        // south-east
+        for (int r2 = r - 1, f2 = f + 1; r2 >= 0 && f2 < 8; r2--, f2++)
+        {
+            ulong bit = 1UL << (r2 * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        // south-west
+        for (int r2 = r - 1, f2 = f - 1; r2 >= 0 && f2 >= 0; r2--, f2--)
+        {
+            ulong bit = 1UL << (r2 * 8 + f2);
+            attacks |= bit;
+            if ((blockers & bit) != 0) break;
+        }
+
+        return attacks;
+    }
+
+
+
     public void DebugBitboard(ulong bb, string label = "")
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -316,7 +422,10 @@ public class Bitboards
     }
 
 
-    public bool ValidateKnightMove(int startSquare, int targetSquare, Piece movingPiece)
+
+
+
+    private bool ValidateKnightMove(int startSquare, int targetSquare, Piece movingPiece)
     {
         ulong targetMask = 1UL << targetSquare;
 
@@ -341,7 +450,7 @@ public class Bitboards
         //the move is legal if both previous checks pass
         return true;
     }
-    public bool ValidateKingMove(int startSquare, int targetSquare, Piece movingPiece)
+    private bool ValidateKingMove(int startSquare, int targetSquare, Piece movingPiece)
     {
         ulong targetMask = 1UL << targetSquare;
 
@@ -368,7 +477,7 @@ public class Bitboards
         //the move is legal if both previous checks pass
         return true;
     }
-    public bool ValidatePawnMove(int startSquare, int targetSquare, Piece movingPiece)
+    private bool ValidatePawnMove(int startSquare, int targetSquare, Piece movingPiece)
     {
         ulong targetMask = 1UL << targetSquare;
         bool isWhite = (int)movingPiece == (int)Piece.WhitePawn;
@@ -430,6 +539,40 @@ public class Bitboards
         }
 
         return false;
+    }
+    private bool ValidateRookMove(int startSquare, int targetSquare, Piece movingPiece)
+    {
+        ulong targetMask = 1UL << targetSquare;
+
+        ulong possibleAttacks = CalculateRookAttacks(startSquare, _allPiecesBB);
+
+        if ((possibleAttacks & targetMask) == 0UL)
+            return false;
+
+        bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
+        ulong friendlyPieces = isWhite ? _whitePiecesBB : _blackPiecesBB;
+
+        if ((friendlyPieces & targetMask) != 0UL)
+            return false;
+
+        return true;
+    }
+    private bool ValidateBishopMove(int startSquare, int targetSquare, Piece movingPiece)
+    {
+        ulong targetMask = 1UL << targetSquare;
+
+        ulong possibleAttacks = CalculateBishopAttacks(startSquare, _allPiecesBB);
+
+        if ((possibleAttacks & targetMask) == 0UL)
+            return false;
+
+        bool isWhite = (int)movingPiece <= (int)Piece.WhiteKing;
+        ulong friendlyPieces = isWhite ? _whitePiecesBB : _blackPiecesBB;
+
+        if ((friendlyPieces & targetMask) != 0UL)
+            return false;
+
+        return true;
     }
 }
 

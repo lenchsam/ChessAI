@@ -27,14 +27,11 @@ public class GameManager : MonoBehaviour
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("8/8/8/8/8/8/8/R7");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
         BitboardScript.GenerateLookupTables();
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
-
-        ulong mask = BitboardScript.MaskRookAttacks(0);
-        possiblities = BitboardScript.CreateAllBlockerBitboards(mask);
     }
     void OnMoveRequestedHandler(Vector2Int from, Vector2Int to)
     {

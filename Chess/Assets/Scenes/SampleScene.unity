@@ -371,6 +371,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _board: {fileID: 1777018107}
   _playerController: {fileID: 1585080427}
+  blockerIndex: 2053
   OnMoveRequested:
     m_PersistentCalls:
       m_Calls: []
