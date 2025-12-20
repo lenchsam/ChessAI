@@ -1,12 +1,20 @@
+using JetBrains.Annotations;
+using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public Bitboards BitboardScript;
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
+
+    [Range(2053, 2100)]
+    [SerializeField] private int blockerIndex;
+
+    ulong[] possiblities;
 
     public UnityEvent<Vector2Int, Vector2Int> OnMoveRequested = new UnityEvent<Vector2Int, Vector2Int>();
     void Awake()
@@ -19,16 +27,15 @@ public class GameManager : MonoBehaviour
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("r1bq1rk1/pp1n1ppp/2p2n2/3p4/3P4/2NBPN2/PP3PPP/R1BQ2K1");
+        BitboardScript.FENtoBitboards("8/8/8/8/8/8/8/R7");
         BitboardScript.GenerateLookupTables();
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
 
-        ulong mask = BitboardScript.MaskBishopAttacks(19); // D4
-        _board.ShowBitboardOverlay(mask, Color.green);
+        ulong mask = BitboardScript.MaskRookAttacks(0);
+        possiblities = BitboardScript.CreateAllBlockerBitboards(mask);
     }
-
     void OnMoveRequestedHandler(Vector2Int from, Vector2Int to)
     {
         bool wasMoveMade = BitboardScript.MovePiece(from, to);

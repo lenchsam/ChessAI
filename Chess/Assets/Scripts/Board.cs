@@ -128,7 +128,7 @@ public class Board : MonoBehaviour
 
         _activeHighlights.Clear();
     }
-    public void ShowBitboardOverlay(ulong bb, Color colour)
+    public void ShowBitboardOverlay(ulong bb)
     {
         ClearHighlights();
 
@@ -147,9 +147,7 @@ public class Board : MonoBehaviour
                 transform
             );
 
-            highlight.GetComponent<SpriteRenderer>().color = colour;
             _activeHighlights.Add(highlight);
         }
     }
-
 }

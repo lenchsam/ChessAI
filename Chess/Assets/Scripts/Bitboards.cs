@@ -265,6 +265,36 @@ public class Bitboards
             attacks |= 1UL << (r * 8 + f);
         return attacks;
     }
+
+    //function from sebastian lague
+    //https://youtu.be/_vqlIPDR2TU?t=1905
+    public ulong[] CreateAllBlockerBitboards(ulong mask)
+    {
+        List<int> moveSquareIndices = new();
+        for (int i = 0; i < 64; i++)
+        {
+            if (((mask >> i) & 1UL) == 1UL)
+            {
+                moveSquareIndices.Add(i);
+            }
+        }
+
+        int numPatterns = 1 << moveSquareIndices.Count;
+        ulong[] blockerBitboards = new ulong[numPatterns];
+
+        for (int patternIndex = 0; patternIndex < numPatterns; patternIndex++)
+        {
+            for(int bitIndex = 0; bitIndex < moveSquareIndices.Count; bitIndex++) 
+            {
+                int bit = (patternIndex >> bitIndex) & 1;
+                blockerBitboards[patternIndex] |= (ulong)bit << moveSquareIndices[bitIndex];
+
+            }
+        }
+
+        return blockerBitboards;
+    }
+
     public void DebugBitboard(ulong bb, string label = "")
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
