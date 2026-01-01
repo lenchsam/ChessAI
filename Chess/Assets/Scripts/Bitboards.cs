@@ -1,8 +1,5 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 public class Bitboards
 {
@@ -10,6 +7,8 @@ public class Bitboards
     // two hex digits (8 bits/1 byte) represents each row
     private ulong[] _bitboards = new ulong[12];
     private ulong _whitePiecesBB, _blackPiecesBB, _allPiecesBB;
+
+    bool _isWhiteTurn = true;
 
     //used for fast lookups of which piece is on which square
     private Piece[] _boardSquares = new Piece[64];
@@ -271,7 +270,8 @@ public class Bitboards
         else if (movingPiece == Piece.WhiteRook || movingPiece == Piece.BlackRook)
         {
             isValid = ValidateRookMove(fromIndex, toIndex, movingPiece);
-        }else if (movingPiece == Piece.WhiteBishop || movingPiece == Piece.BlackBishop)
+        }
+        else if (movingPiece == Piece.WhiteBishop || movingPiece == Piece.BlackBishop)
         {
             isValid = ValidateBishopMove(fromIndex, toIndex, movingPiece);
         }
@@ -279,17 +279,9 @@ public class Bitboards
         {
             isValid = ValidateQueenMove(fromIndex, toIndex, movingPiece);
         }
-        else
-        {
-            //other pieces not implemented yet
-            return false;
-        }
 
         //if it didnt get validated
         if (!isValid) return false;
-
-
-        //do move
 
         //capture
         if (targetPiece != Piece.None)
@@ -301,9 +293,25 @@ public class Bitboards
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
 
         _boardSquares[toIndex] = movingPiece;
-        _boardSquares[fromIndex] = Piece.None;;
+        _boardSquares[fromIndex] = Piece.None;
 
         UpdateTotalBitboards();
+
+
+        _isWhiteTurn = !_isWhiteTurn; //toggle turn
+
+        bool inCheck = InCheck();
+
+        if (_isWhiteTurn && inCheck)
+        {
+            Debug.Log("White is in check");
+        }
+        else if(!_isWhiteTurn && inCheck)
+        {
+            Debug.Log("Black is in check");
+        }
+
+
 
         return true;
     }
@@ -345,12 +353,12 @@ public class Bitboards
             int EaEa = 10;
 
             //bitshifting to get all of the possible moves
-            possibleMoves = (startBit << NoEa & ~FILE_A)  |
-                            (startBit << NoWe & ~FILE_H)  |
+            possibleMoves = (startBit << NoEa & ~FILE_A) |
+                            (startBit << NoWe & ~FILE_H) |
                             (startBit << EaEa & ~FILE_AB) |
                             (startBit << WoWe & ~FILE_GH) |
-                            (startBit >> NoEa & ~FILE_H)  |
-                            (startBit >> NoWe & ~FILE_A)  |
+                            (startBit >> NoEa & ~FILE_H) |
+                            (startBit >> NoWe & ~FILE_A) |
                             (startBit >> EaEa & ~FILE_GH) |
                             (startBit >> WoWe & ~FILE_AB);
 
@@ -467,7 +475,7 @@ public class Bitboards
 
         for (int patternIndex = 0; patternIndex < numPatterns; patternIndex++)
         {
-            for(int bitIndex = 0; bitIndex < moveSquareIndices.Count; bitIndex++) 
+            for (int bitIndex = 0; bitIndex < moveSquareIndices.Count; bitIndex++)
             {
                 int bit = (patternIndex >> bitIndex) & 1;
                 blockerBitboards[patternIndex] |= (ulong)bit << moveSquareIndices[bitIndex];
@@ -663,7 +671,6 @@ public class Bitboards
             if ((_blackPiecesBB & targetMask) != 0UL)
                 return false;
         }
-
         //the move is legal if both previous checks pass
         return true;
     }
@@ -848,5 +855,93 @@ public class Bitboards
 
         return true;
     }
-}
 
+    int GetKingSquare(bool isWhite)
+    {
+        ulong kingBB = isWhite ? _bitboards[(int)Piece.WhiteKing] : _bitboards[(int)Piece.BlackKing];
+
+        for (int i = 0; i < 64; i++)
+        {
+            if (((kingBB >> i) & 1UL) != 0UL)
+                return i;
+        }
+        //not found
+        return -1;
+    }
+    bool IsSquareAttacked(int square, bool byWhite)
+    {
+        ulong targetMask = 1UL << square;
+
+        //knight attacks
+        ulong knightBB = byWhite ? _bitboards[(int)Piece.WhiteKnight] : _bitboards[(int)Piece.BlackKnight];
+
+        if ((_knightLookup[square] & knightBB) != 0)
+            return true;
+
+        //pawn attacks
+        ulong pawnBB = byWhite ? _bitboards[(int)Piece.WhitePawn] : _bitboards[(int)Piece.BlackPawn];
+
+        ulong pawnAttackers = byWhite ? _blackPawnLookup[square] : _whitePawnLookup[square];
+
+        if ((pawnAttackers & pawnBB) != 0)
+            return true;
+
+        //king attacks
+        ulong kingBB = byWhite ? _bitboards[(int)Piece.WhiteKing] : _bitboards[(int)Piece.BlackKing];
+
+        if ((_kingLookup[square] & kingBB) != 0)
+            return true;
+
+        ulong occupancy = _allPiecesBB;
+
+        // bishops / queens
+        ulong bishops = byWhite ? _bitboards[(int)Piece.WhiteBishop] : _bitboards[(int)Piece.BlackBishop];
+        ulong queens = byWhite ? _bitboards[(int)Piece.WhiteQueen] : _bitboards[(int)Piece.BlackQueen];
+
+        ulong bishopOcc = occupancy & _bishopMasks[square];
+        int bishopIndex = (int)((bishopOcc * _bishopMagics[square]) >> _bishopShifts[square]);
+        ulong bishopAttacks = _bishopAttackTable[square][bishopIndex];
+
+        if ((bishopAttacks & (bishops | queens)) != 0)
+            return true;
+
+        // rooks / queens
+        ulong rooks = byWhite ? _bitboards[(int)Piece.WhiteRook] : _bitboards[(int)Piece.BlackRook];
+
+        ulong rookOcc = occupancy & _rookMasks[square];
+        int rookIndex = (int)((rookOcc * _rookMagics[square]) >> _rookShifts[square]);
+        ulong rookAttacks = _rookAttackTable[square][rookIndex];
+
+        if ((rookAttacks & (rooks | queens)) != 0)
+            return true;
+
+        return false;
+
+    }
+    bool InCheck()
+    {
+        int kingSquare = GetKingSquare(_isWhiteTurn);
+        return IsSquareAttacked(kingSquare, !_isWhiteTurn);
+    }
+    bool IsCheckmate()
+    {
+        //cannot be checkmate if not in check
+        if (!InCheck())
+            return false;
+
+
+
+        return false;
+    }
+
+    bool IsStalemate()
+    {
+        //cannot be stalemate if in check
+        if (InCheck())
+            return false;
+
+
+
+        return false;
+    }
+}
