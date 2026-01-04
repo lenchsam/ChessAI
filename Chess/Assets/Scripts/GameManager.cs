@@ -1,20 +1,11 @@
-using JetBrains.Annotations;
-using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public Bitboards BitboardScript;
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
-
-    [Range(2053, 2100)]
-    [SerializeField] private int blockerIndex;
-
-    ulong[] possiblities;
 
     public UnityEvent<Vector2Int, Vector2Int> OnMoveRequested = new UnityEvent<Vector2Int, Vector2Int>();
     void Awake()
