@@ -22,8 +22,8 @@ public class Board : MonoBehaviour
     [SerializeField] private BoardSettings _boardSettings;
     [SerializeField] private GameObject _squarePrefab;
 
-    private GameObject[,] _pieceObjects = new GameObject[8, 8];
-    private GameObject[,] _squareObjects = new GameObject[8, 8];
+    private GameObject[] _pieceObjects = new GameObject[64];
+    private GameObject[] _squareObjects = new GameObject[64];
 
     [Header("Piece Prefabs")]
     [SerializeField] GameObject[] _piecePrefabs = new GameObject[12];
@@ -79,7 +79,7 @@ public class Board : MonoBehaviour
                 Vector2 position = new Vector2(x, y);
                 GameObject piecePrefab = GetPiecePrefab(piece);
                 GameObject instance = Instantiate(piecePrefab, position, Quaternion.identity, _piecesParent.transform);
-                _pieceObjects[x, y] = instance;
+                _pieceObjects[i] = instance;
             }
         }
     }
@@ -94,31 +94,36 @@ public class Board : MonoBehaviour
         Instantiate(_squarePrefab, position, Quaternion.identity, _boardParent.transform).GetComponent<SpriteRenderer>().color = colour;
     }
 
-    public GameObject GetPieceFromPosition(Vector2Int pos)
+    public GameObject GetPieceFromPosition(int pos)
     {
-        return _pieceObjects[pos.x, pos.y];
+        return _pieceObjects[pos];
     }
 
-    public void MovePieceVisual(Vector2Int oldCords, Vector2Int newCords)
+    public void MovePieceVisual(int oldSquare, int newSquare)
     {
-        GameObject pieceToMove = _pieceObjects[oldCords.x, oldCords.y];
+        GameObject pieceToMove = _pieceObjects[oldSquare];
 
+        int oldX = oldSquare % 8;
+        int oldY = oldSquare / 8;
+
+        int newX = newSquare % 8;
+        int newY = newSquare / 8;
         //if they didnt move the piece
-        if (oldCords == newCords)
+        if (oldSquare == newSquare)
         {
-            pieceToMove.transform.position = new Vector3(oldCords.x, oldCords.y, -1);
+            pieceToMove.transform.position = new Vector3(oldX, oldY, -1);
             return;
         }
 
-        pieceToMove.transform.position = new Vector3(newCords.x, newCords.y, -1);
+        pieceToMove.transform.position = new Vector3(newX, newY, -1);
 
-        if (_pieceObjects[newCords.x, newCords.y] != null)
+        if (_pieceObjects[newSquare] != null)
         {
-            Destroy(_pieceObjects[newCords.x, newCords.y]);
+            Destroy(_pieceObjects[newSquare]);
         }
 
-        _pieceObjects[newCords.x, newCords.y] = _pieceObjects[oldCords.x, oldCords.y];
-        _pieceObjects[oldCords.x, oldCords.y] = null;
+        _pieceObjects[newSquare] = _pieceObjects[oldSquare];
+        _pieceObjects[oldSquare] = null;
     }
 
     private void ClearHighlights()

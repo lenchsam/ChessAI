@@ -3,11 +3,11 @@ using UnityEngine;
 public class PieceSelectedState : IState
 {
     private PlayerController _playerController;
-    private Vector2Int _pieceCoords;
+    private int _pieceCoords;
     private GameObject _selectedPiece;
     private Camera _mainCamera;
 
-    public PieceSelectedState(PlayerController playerController, Vector2Int pieceCoords)
+    public PieceSelectedState(PlayerController playerController, int pieceCoords)
     {
         _playerController = playerController;
         _pieceCoords = pieceCoords;
@@ -40,14 +40,17 @@ public class PieceSelectedState : IState
 
             if (x < 0 || x >= 8 || y < 0 || y >= 8)
             {
-                _selectedPiece.transform.position = new Vector3(_pieceCoords.x, _pieceCoords.y, -1);
+                int pieceX = _pieceCoords % 8;
+                int pieceY = _pieceCoords / 8;
+
+                _selectedPiece.transform.position = new Vector3(pieceX, pieceY, -1);
                 _playerController.ChangeState(new DefaultState(_playerController));
                 return;
             }
 
-            Vector2Int newCoords = new Vector2Int(x, y);
+            int newSquareIndex = (y * 8) + x;
 
-            _playerController.Game_Manager.OnMoveRequested?.Invoke(_pieceCoords, newCoords);
+            _playerController.Game_Manager.OnMoveRequested?.Invoke(_pieceCoords, newSquareIndex);
 
             _playerController.ChangeState(new DefaultState(_playerController));
         }

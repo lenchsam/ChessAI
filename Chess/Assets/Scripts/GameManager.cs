@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
 
-    public UnityEvent<Vector2Int, Vector2Int> OnMoveRequested = new UnityEvent<Vector2Int, Vector2Int>();
+    public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
     {
         BitboardScript = new Bitboards();
@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
     }
-    void OnMoveRequestedHandler(Vector2Int from, Vector2Int to)
+    void OnMoveRequestedHandler(int from, int to)
     {
         bool wasMoveMade = BitboardScript.MovePiece(from, to);
         if (wasMoveMade)
@@ -35,9 +35,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            int fromX = from % 8;
+            int fromY = from / 8;
             //resent piece to original position
             GameObject piece = _board.GetPieceFromPosition(from);
-            piece.transform.position = new Vector2(from.x, from.y);
+            piece.transform.position = new Vector2(fromX, fromY);
         }
     }
 }

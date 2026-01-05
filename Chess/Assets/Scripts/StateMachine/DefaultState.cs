@@ -54,7 +54,8 @@ public class DefaultState : IState
 
             if (isWhitePiece == _playerController.IsPlayerWhite)
             {
-                _playerController.ChangeState(new PieceSelectedState(_playerController, new Vector2Int(x, y)));
+                int newSquareIndex = (y * 8) + x;
+                _playerController.ChangeState(new PieceSelectedState(_playerController, newSquareIndex));
             }
         }
     }

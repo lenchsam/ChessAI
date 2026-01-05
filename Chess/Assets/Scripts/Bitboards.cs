@@ -1,6 +1,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public struct Move
+{
+    int StartingPos;
+    int EndingPos;
+
+    //needed for undoing moves during checking for ending conditions
+    Piece MovingPiece;
+    Piece CapturedPiece;
+
+    public Move(int from, int to, Piece moving, Piece capture)
+    {
+        StartingPos = from;
+        EndingPos = to;
+        MovingPiece = moving;
+        CapturedPiece = capture;
+    }
+}
 public class Bitboards
 {
     // ulong is a 64-bit unsigned integer
@@ -238,46 +255,42 @@ public class Bitboards
         return _boardSquares[squareIndex];
     }
 
-    public bool MovePiece(Vector2Int from, Vector2Int to)
+    public bool MovePiece(int from, int to)
     {
         if (from == to) return false;
 
-        //get square indexes
-        int fromIndex = from.y * 8 + from.x;
-        int toIndex = to.y * 8 + to.x;
+        ulong fromBit = 1UL << from;
+        ulong toBit = 1UL << to;
 
-        ulong fromBit = 1UL << fromIndex;
-        ulong toBit = 1UL << toIndex;
-
-        Piece movingPiece = _boardSquares[fromIndex];
-        Piece targetPiece = _boardSquares[toIndex];
+        Piece movingPiece = _boardSquares[from];
+        Piece targetPiece = _boardSquares[to];
 
         //validate move based on piece type
         bool isValid = false;
 
         if (movingPiece == Piece.WhiteKnight || movingPiece == Piece.BlackKnight)
         {
-            isValid = ValidateKnightMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidateKnightMove(from, to, movingPiece);
         }
         else if (movingPiece == Piece.BlackKing || movingPiece == Piece.WhiteKing)
         {
-            isValid = ValidateKingMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidateKingMove(from, to, movingPiece);
         }
         else if (movingPiece == Piece.WhitePawn || movingPiece == Piece.BlackPawn)
         {
-            isValid = ValidatePawnMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidatePawnMove(from, to, movingPiece);
         }
         else if (movingPiece == Piece.WhiteRook || movingPiece == Piece.BlackRook)
         {
-            isValid = ValidateRookMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidateRookMove(from, to, movingPiece);
         }
         else if (movingPiece == Piece.WhiteBishop || movingPiece == Piece.BlackBishop)
         {
-            isValid = ValidateBishopMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidateBishopMove(from, to, movingPiece);
         }
         else if (movingPiece == Piece.WhiteQueen || movingPiece == Piece.BlackQueen)
         {
-            isValid = ValidateQueenMove(fromIndex, toIndex, movingPiece);
+            isValid = ValidateQueenMove(from, to, movingPiece);
         }
 
         //if it didnt get validated
@@ -292,8 +305,8 @@ public class Bitboards
         //update moving piece bitboard
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
 
-        _boardSquares[toIndex] = movingPiece;
-        _boardSquares[fromIndex] = Piece.None;
+        _boardSquares[to] = movingPiece;
+        _boardSquares[from] = Piece.None;
 
         UpdateTotalBitboards();
 
@@ -314,6 +327,16 @@ public class Bitboards
 
 
         return true;
+    }
+
+    private Move CreateMove(int from, int to)
+    {
+        Piece movingPiece = GetPieceOnSquare(from);
+        Piece capturedPiece = GetPieceOnSquare(to);
+
+        Move move = new Move(from, to, movingPiece, capturedPiece);
+        
+        return move;
     }
 
     private void UpdateTotalBitboards()
