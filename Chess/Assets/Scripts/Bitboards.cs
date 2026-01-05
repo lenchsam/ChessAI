@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public struct Move
 {
+
     int StartingPos;
     int EndingPos;
 
@@ -20,6 +22,8 @@ public struct Move
 }
 public class Bitboards
 {
+    public UnityEvent<ulong> MovingPieceEvent = new UnityEvent<ulong>();
+
     // ulong is a 64-bit unsigned integer
     // two hex digits (8 bits/1 byte) represents each row
     private ulong[] _bitboards = new ulong[12];
@@ -39,6 +43,7 @@ public class Bitboards
     {'b', (int)Piece.BlackBishop}, {'r', (int)Piece.BlackRook},
     {'q', (int)Piece.BlackQueen},  {'k', (int)Piece.BlackKing}
     };
+
 
     //lookup tables of none sliding pieces
     private ulong[] _knightLookup = new ulong[64];
@@ -308,6 +313,7 @@ public class Bitboards
         _boardSquares[to] = movingPiece;
         _boardSquares[from] = Piece.None;
 
+
         UpdateTotalBitboards();
 
 
@@ -327,6 +333,32 @@ public class Bitboards
 
 
         return true;
+    }
+
+    public void InvokeEvent(int from)
+    {
+        MovingPieceEvent.Invoke(GetLookupFromSquare(from));
+    }
+    private ulong GetLookupFromSquare(int square)
+    {
+        //TODO: Change to generated moves so only legal moves show
+        //that will also fix that pawns only shows the diagonals that they can attack
+        Piece piece = GetPieceOnSquare(square);
+
+        switch (piece) {
+            case Piece.WhitePawn:
+                return _whitePawnLookup[square];
+            case Piece.BlackPawn:
+                return _blackPawnLookup[square];
+            case Piece.WhiteKnight:
+            case Piece.BlackKnight:
+                return _knightLookup[square];
+            case Piece.WhiteKing:
+            case Piece.BlackKing:
+                return _kingLookup[square];
+        }
+
+        return 0UL;
     }
 
     private Move CreateMove(int from, int to)
@@ -878,7 +910,7 @@ public class Bitboards
 
         return true;
     }
-
+    
     int GetKingSquare(bool isWhite)
     {
         ulong kingBB = isWhite ? _bitboards[(int)Piece.WhiteKing] : _bitboards[(int)Piece.BlackKing];

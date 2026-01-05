@@ -18,7 +18,7 @@ public class PieceSelectedState : IState
 
     public void Enter()
     {
-
+        _playerController.Game_Manager.BitboardScript.InvokeEvent(_pieceCoords);
     }
 
     public void Exit()

@@ -23,7 +23,6 @@ public class Board : MonoBehaviour
     [SerializeField] private GameObject _squarePrefab;
 
     private GameObject[] _pieceObjects = new GameObject[64];
-    private GameObject[] _squareObjects = new GameObject[64];
 
     [Header("Piece Prefabs")]
     [SerializeField] GameObject[] _piecePrefabs = new GameObject[12];
@@ -31,9 +30,6 @@ public class Board : MonoBehaviour
     private GameObject _boardParent;
     private GameObject _piecesParent;
 
-    //bitboard overlay
-    [SerializeField] private GameObject _highlightPrefab;
-    private List<GameObject> _activeHighlights = new List<GameObject>();
     private void Awake()
     {
         _boardParent = new GameObject();
@@ -126,33 +122,5 @@ public class Board : MonoBehaviour
         _pieceObjects[oldSquare] = null;
     }
 
-    private void ClearHighlights()
-    {
-        foreach (var h in _activeHighlights)
-            Destroy(h);
 
-        _activeHighlights.Clear();
-    }
-    public void ShowBitboardOverlay(ulong bb)
-    {
-        ClearHighlights();
-
-        for (int square = 0; square < 64; square++)
-        {
-            if (((bb >> square) & 1UL) == 0UL)
-                continue;
-
-            int x = square % 8;
-            int y = square / 8;
-
-            GameObject highlight = Instantiate(
-                _highlightPrefab,
-                new Vector3(x, y, -0.5f),
-                Quaternion.identity,
-                transform
-            );
-
-            _activeHighlights.Add(highlight);
-        }
-    }
 }
