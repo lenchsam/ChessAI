@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 public class VisualiseBitboard : MonoBehaviour
 {
@@ -33,6 +32,11 @@ public class VisualiseBitboard : MonoBehaviour
                 HighlightGameObjects[(y * 8) + x] = highlight;
             }
         }
+    }
+    public void DisplayPieceBitboard(int piece)
+    {
+        ulong bitboard = _gameManager.BitboardScript.GetPositionBitboardFromPiece((Piece)piece);
+        ShowBitboardOverlay(bitboard);
     }
     private void ClearHighlights()
     {

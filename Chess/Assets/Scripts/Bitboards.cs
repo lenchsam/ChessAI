@@ -339,13 +339,40 @@ public class Bitboards
     {
         MovingPieceEvent.Invoke(GetLookupFromSquare(from));
     }
+    public ulong GetPositionBitboardFromPiece(Piece piece)
+    {
+        switch (piece) {
+            case Piece.WhitePawn:
+            case Piece.BlackPawn:
+                return _bitboards[(int)Piece.WhitePawn] | _bitboards[(int)Piece.BlackPawn];
+            case Piece.WhiteKnight:
+            case Piece.BlackKnight:
+                return _bitboards[(int)Piece.WhiteKnight] | _bitboards[(int)Piece.BlackKnight];
+            case Piece.WhiteKing:
+            case Piece.BlackKing:
+                return _bitboards[(int)Piece.WhiteKing] | _bitboards[(int)Piece.BlackKing];
+            case Piece.WhiteBishop:
+            case Piece.BlackBishop:
+                return _bitboards[(int)Piece.WhiteBishop] | _bitboards[(int)Piece.BlackBishop];
+            case Piece.WhiteRook:
+            case Piece.BlackRook:
+                return _bitboards[(int)Piece.WhiteRook] | _bitboards[(int)Piece.BlackRook];
+            case Piece.WhiteQueen:
+            case Piece.BlackQueen:
+                return _bitboards[(int)Piece.WhiteQueen] | _bitboards[(int)Piece.BlackQueen];
+        }
+
+        return 0UL;
+    }
+
     private ulong GetLookupFromSquare(int square)
     {
         //TODO: Change to generated moves so only legal moves show
         //that will also fix that pawns only shows the diagonals that they can attack
         Piece piece = GetPieceOnSquare(square);
 
-        switch (piece) {
+        switch (piece)
+        {
             case Piece.WhitePawn:
                 return _whitePawnLookup[square];
             case Piece.BlackPawn:

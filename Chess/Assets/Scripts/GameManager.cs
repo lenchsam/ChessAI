@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
     }
+
     void OnMoveRequestedHandler(int from, int to)
     {
         bool wasMoveMade = BitboardScript.MovePiece(from, to);
