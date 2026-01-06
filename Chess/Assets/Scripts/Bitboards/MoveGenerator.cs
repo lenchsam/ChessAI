@@ -1,5 +1,6 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
 
 public static class MoveGenerator
 {
@@ -178,78 +179,71 @@ public static class MoveGenerator
         InitialiseNonSlidingLookupTables();
         InitialiseRookAndBishopMagics();
     }
-    private static void InitialiseNonSlidingLookupTables()
+#region public utils
+    public static void GeneratePseudoLegalMoves(
+        ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
+        ulong allPieces, ulong ownPieces, ulong enemyPieces,
+        bool isWhiteTurn, List<Move> moveList)
     {
-        ulong FILE_A = 0x0101010101010101;
-        ulong FILE_H = 0x8080808080808080;
+        //non sliding pieces
+        GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
+        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList);
+        GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList);
 
-        ulong FILE_AB = FILE_A | (FILE_A << 1);
-        ulong FILE_GH = FILE_H | (FILE_H >> 1);
-
-        //-----------------------------------------------------------------------Knights
-
-        for (int squareIndex = 0; squareIndex < 64; squareIndex++)
-        {
-            ulong startBit = 1UL << squareIndex;
-            ulong possibleMoves = 0UL;
-
-            //directions of attack e.g. NoWe = north west (doesnt include south or north initial as it just shifts the other direction for this.
-            int WoWe = 6;
-            int NoWe = 15;
-            int NoEa = 17;
-            int EaEa = 10;
-
-            //bitshifting to get all of the possible moves
-            possibleMoves = (startBit << NoEa & ~FILE_A) |
-                            (startBit << NoWe & ~FILE_H) |
-                            (startBit << EaEa & ~FILE_AB) |
-                            (startBit << WoWe & ~FILE_GH) |
-                            (startBit >> NoEa & ~FILE_H) |
-                            (startBit >> NoWe & ~FILE_A) |
-                            (startBit >> EaEa & ~FILE_GH) |
-                            (startBit >> WoWe & ~FILE_AB);
-
-            KnightLookup[squareIndex] = possibleMoves;
-
-            //-----------------------------------------------------------------------King
-
-            possibleMoves = 0UL;
-
-            //up down
-            possibleMoves |= (startBit << 8); // North
-            possibleMoves |= (startBit >> 8); // South
-
-            //horizontal
-            possibleMoves |= (startBit << 1) & ~FILE_A;
-            possibleMoves |= (startBit >> 1) & ~FILE_H;
-
-            //diagonal
-            possibleMoves |= (startBit << 9) & ~FILE_A; //NE
-            possibleMoves |= (startBit << 7) & ~FILE_H; //NW
-            possibleMoves |= (startBit >> 7) & ~FILE_A; //SE
-            possibleMoves |= (startBit >> 9) & ~FILE_H; //SW
-
-            KingLookup[squareIndex] = possibleMoves;
-
-            //-----------------------------------------------------------------------Pawns
-
-            ///white pawns
-            ulong whiteAttacks = 0UL;
-            whiteAttacks |= (startBit << 9) & ~FILE_A; //NE
-            whiteAttacks |= (startBit << 7) & ~FILE_H; //NW
-
-            WhitePawnLookup[squareIndex] = whiteAttacks;
-
-            //black pawns
-            ulong blackAttacks = 0UL;
-            blackAttacks |= (startBit >> 7) & ~FILE_A; //SE
-            blackAttacks |= (startBit >> 9) & ~FILE_H; //SW
-
-            BlackPawnLookup[squareIndex] = blackAttacks;
-        }
+        //sliding pieces
+        //doesnt matter if white or black piece type as attacks are the same
+        GenerateSlidingMoves(bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
     }
 
-    #region magic bitboards
+    public static List<Move> GetMovesFromSquare(int square, Piece pieceType, 
+        ulong allPieces, ulong ownPieces, ulong enemyPieces,
+        bool isWhiteTurn)
+    {
+        List<Move> moves = new List<Move>();
+
+        ulong mask = 1UL << square;
+
+
+        switch (pieceType)
+        {
+            case Piece.WhiteBishop:
+            case Piece.BlackBishop:
+                GenerateSlidingMoves(mask, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moves);
+                break;
+
+            case Piece.WhiteRook:
+            case Piece.BlackRook:
+                GenerateSlidingMoves(mask, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moves);
+                break;
+
+            case Piece.WhiteQueen:
+            case Piece.BlackQueen:
+                GenerateSlidingMoves(mask, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moves);
+                break;
+
+            case Piece.WhiteKnight:
+            case Piece.BlackKnight:
+                GenerateKnightMoves(mask, ownPieces, enemyPieces, moves);
+                break;
+
+            case Piece.WhiteKing:
+            case Piece.BlackKing:
+                GenerateKingMoves(mask, ownPieces, enemyPieces, moves);
+                break;
+
+            case Piece.WhitePawn:
+            case Piece.BlackPawn:
+                GeneratePawnMoves(mask, allPieces, enemyPieces, isWhiteTurn, moves);
+                break;
+        }
+
+        return moves;
+    }
+#endregion
+
+#region Magic Bitboards
     //Public accesor 
     public static ulong GetSliderAttacks(Piece piece, int square, ulong allPieces)
     {
@@ -483,23 +477,77 @@ public static class MoveGenerator
     }
     #endregion
 
-    public static void GeneratePseudoLegalMoves(
-        ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
-        ulong allPieces, ulong ownPieces, ulong enemyPieces,
-        bool isWhiteTurn, List<Move> moveList)
+#region Move Generators
+    private static void InitialiseNonSlidingLookupTables()
     {
-        //non sliding pieces
-        GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
-        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList);
-        GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList);
+        ulong FILE_A = 0x0101010101010101;
+        ulong FILE_H = 0x8080808080808080;
 
-        //sliding pieces
-        //doesnt matter if white or black piece type as attacks are the same
-        GenerateSlidingMoves(bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList);
-        GenerateSlidingMoves(rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList);
-        GenerateSlidingMoves(queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
+        ulong FILE_AB = FILE_A | (FILE_A << 1);
+        ulong FILE_GH = FILE_H | (FILE_H >> 1);
+
+        //-----------------------------------------------------------------------Knights
+
+        for (int squareIndex = 0; squareIndex < 64; squareIndex++)
+        {
+            ulong startBit = 1UL << squareIndex;
+            ulong possibleMoves = 0UL;
+
+            //directions of attack e.g. NoWe = north west (doesnt include south or north initial as it just shifts the other direction for this.
+            int WoWe = 6;
+            int NoWe = 15;
+            int NoEa = 17;
+            int EaEa = 10;
+
+            //bitshifting to get all of the possible moves
+            possibleMoves = (startBit << NoEa & ~FILE_A) |
+                            (startBit << NoWe & ~FILE_H) |
+                            (startBit << EaEa & ~FILE_AB) |
+                            (startBit << WoWe & ~FILE_GH) |
+                            (startBit >> NoEa & ~FILE_H) |
+                            (startBit >> NoWe & ~FILE_A) |
+                            (startBit >> EaEa & ~FILE_GH) |
+                            (startBit >> WoWe & ~FILE_AB);
+
+            KnightLookup[squareIndex] = possibleMoves;
+
+            //-----------------------------------------------------------------------King
+
+            possibleMoves = 0UL;
+
+            //up down
+            possibleMoves |= (startBit << 8); // North
+            possibleMoves |= (startBit >> 8); // South
+
+            //horizontal
+            possibleMoves |= (startBit << 1) & ~FILE_A;
+            possibleMoves |= (startBit >> 1) & ~FILE_H;
+
+            //diagonal
+            possibleMoves |= (startBit << 9) & ~FILE_A; //NE
+            possibleMoves |= (startBit << 7) & ~FILE_H; //NW
+            possibleMoves |= (startBit >> 7) & ~FILE_A; //SE
+            possibleMoves |= (startBit >> 9) & ~FILE_H; //SW
+
+            KingLookup[squareIndex] = possibleMoves;
+
+            //-----------------------------------------------------------------------Pawns
+
+            ///white pawns
+            ulong whiteAttacks = 0UL;
+            whiteAttacks |= (startBit << 9) & ~FILE_A; //NE
+            whiteAttacks |= (startBit << 7) & ~FILE_H; //NW
+
+            WhitePawnLookup[squareIndex] = whiteAttacks;
+
+            //black pawns
+            ulong blackAttacks = 0UL;
+            blackAttacks |= (startBit >> 7) & ~FILE_A; //SE
+            blackAttacks |= (startBit >> 9) & ~FILE_H; //SW
+
+            BlackPawnLookup[squareIndex] = blackAttacks;
+        }
     }
-
     private static void GenerateSlidingMoves(ulong pieces, Piece pieceType, ulong allPieces, ulong ownPieces, ulong enemyPieces, List<Move> moveList)
     {
         while (pieces != 0)
@@ -622,4 +670,5 @@ public static class MoveGenerator
             }
         }
     }
+#endregion
 }

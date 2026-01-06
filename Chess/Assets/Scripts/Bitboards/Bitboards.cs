@@ -176,7 +176,20 @@ public class Bitboards
 
     public void InvokeEvent(int from)
     {
-        MovingPieceEvent.Invoke(GetLookupFromSquare(from));
+        List<Move> moveList = MoveGenerator.GetMovesFromSquare(from, GetPieceOnSquare(from), _allPiecesBB, 
+            _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB, //own pieces
+            _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB, //enemy pieces
+            _isWhiteTurn);
+
+        ulong moves = 0UL;
+
+        foreach (Move move in moveList) 
+        {
+            int square = move.EndingPos;
+            moves |= 1UL << square;
+        }
+
+        MovingPieceEvent.Invoke(moves);
     }
     public ulong GetPositionBitboardFromPiece(Piece piece)
     {
