@@ -21,7 +21,7 @@ public enum Piece
 }
 public class Board : MonoBehaviour
 {
-    [SerializeField] private BoardSettings _boardSettings;
+
     [SerializeField] private GameObject _squarePrefab;
 
     private GameObject[] _pieceObjects = new GameObject[64];
@@ -32,6 +32,9 @@ public class Board : MonoBehaviour
     private GameObject _boardParent;
     private GameObject _piecesParent;
 
+    Color _whiteMaterial;
+    Color _blackMaterial;
+
     private void Awake()
     {
         _boardParent = new GameObject();
@@ -40,10 +43,13 @@ public class Board : MonoBehaviour
         _piecesParent = new GameObject();
         _piecesParent.name = "Pieces";
     }
+    public void SetBoardColour(Color whiteColour, Color blackColour)
+    {
+        _whiteMaterial = whiteColour;
+        _blackMaterial = blackColour;
+    }
     public void CreateBoard()
     {
-        Color whiteMaterial = _boardSettings.whiteColor;
-        Color blackMaterial = _boardSettings.blackColor;
         for (int x = 0; x < 8; x++)
         {
             for(int y = 0; y < 8; y++)
@@ -53,11 +59,11 @@ public class Board : MonoBehaviour
                 Color squareColor;
                 if (isWhite)
                 {
-                    squareColor = whiteMaterial;
+                    squareColor = _whiteMaterial;
                 }
                 else
                 {
-                    squareColor = blackMaterial;
+                    squareColor = _blackMaterial;
                 }
                 Vector2 position = new Vector2(x, y);
 

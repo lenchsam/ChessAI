@@ -6,11 +6,16 @@ public class GameManager : MonoBehaviour
     public Bitboards BitboardScript;
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
+    [SerializeField] private BoardSettings _boardSettings;
+    [SerializeField] private VisualiseBitboard _visualiseBitboard;
 
     public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
     {
         BitboardScript = new Bitboards();
+        _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
+        _visualiseBitboard.SetHighlightColour(_boardSettings.highlightColor);
+
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -18,7 +23,7 @@ public class GameManager : MonoBehaviour
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR");
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);

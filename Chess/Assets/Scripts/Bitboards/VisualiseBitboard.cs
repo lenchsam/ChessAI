@@ -15,6 +15,10 @@ public class VisualiseBitboard : MonoBehaviour
         InstantiateSquares();
         _gameManager.BitboardScript.MovingPieceEvent.AddListener(ShowBitboardOverlay);
     }
+    public void SetHighlightColour(Color highlightColour)
+    {
+        _highlightPrefab.GetComponent<SpriteRenderer>().color = highlightColour;
+    }
     private void InstantiateSquares()
     {
         for (int x = 0; x < 8; x++)

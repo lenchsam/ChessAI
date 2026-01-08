@@ -1364,6 +1364,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _board: {fileID: 1777018107}
   _playerController: {fileID: 1585080427}
+  _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
+  _visualiseBitboard: {fileID: 1204344762}
   OnMoveRequested:
     m_PersistentCalls:
       m_Calls: []
@@ -3150,7 +3152,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ad40694255fbe7468f041302584f94a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
   _squarePrefab: {fileID: 5732358793313240025, guid: 1529259b34fbc5c4fbaf03dd8857ed66, type: 3}
   _piecePrefabs:
   - {fileID: 7283956173578177627, guid: 032bde0f1c8746744930efebad6d22a3, type: 3}
