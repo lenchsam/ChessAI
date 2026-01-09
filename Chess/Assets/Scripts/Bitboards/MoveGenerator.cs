@@ -670,5 +670,24 @@ public static class MoveGenerator
             }
         }
     }
-#endregion
+    #endregion
+
+    public static bool IsSquareAttacked(int square, bool byWhite, ulong allPieces, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings, ulong pawns)
+    {
+        if ((KnightLookup[square] & knights) != 0) return true;
+
+        if ((KingLookup[square] & kings) != 0) return true;
+
+        ulong pawnAttacks = byWhite ? BlackPawnLookup[square] : WhitePawnLookup[square];
+        if ((pawnAttacks & pawns) != 0) return true;
+
+        //queen has the same attacks as rook and bishop combined
+        ulong bishopAttacks = GetSliderAttacks(Piece.WhiteBishop, square, allPieces);
+        if ((bishopAttacks & (bishops | queens)) != 0) return true;
+
+        ulong rookAttacks = GetSliderAttacks(Piece.WhiteRook, square, allPieces);
+        if ((rookAttacks & (rooks | queens)) != 0) return true;
+
+        return false;
+    }
 }

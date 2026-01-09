@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);

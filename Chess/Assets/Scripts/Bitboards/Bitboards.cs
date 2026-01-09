@@ -19,6 +19,12 @@ public struct Move
         IsCapture = isCapture;
     }
 }
+public enum GameState
+{
+    Playing,
+    Checkmate,
+    Stalemate
+}
 public class Bitboards
 {
     public UnityEvent<ulong> MovingPieceEvent = new UnityEvent<ulong>();
@@ -42,6 +48,8 @@ public class Bitboards
     {'b', (int)Piece.BlackBishop}, {'r', (int)Piece.BlackRook},
     {'q', (int)Piece.BlackQueen},  {'k', (int)Piece.BlackKing}
     };
+
+    private List<Move> _currentLegalMoves = new List<Move>();
 
     public void FENtoBitboards(string FEN)
     {
@@ -82,6 +90,8 @@ public class Bitboards
             }
         }
         UpdateTotalBitboards();
+
+        GenerateLegalMoves();
     }
 
     public Piece GetPieceOnSquare(int squareIndex)
@@ -91,102 +101,67 @@ public class Bitboards
 
     public bool MovePiece(int from, int to)
     {
-        if (from == to) return false;
-
-        List<Move> moveList = new List<Move>();
-
-        //correct bitboard based on colour
-        ulong pawns, knights, bishops, rooks, queens, king;
-
-        if (_isWhiteTurn)
-        {
-            pawns = _bitboards[(int)Piece.WhitePawn];
-            knights = _bitboards[(int)Piece.WhiteKnight];
-            bishops = _bitboards[(int)Piece.WhiteBishop];
-            rooks = _bitboards[(int)Piece.WhiteRook];
-            queens = _bitboards[(int)Piece.WhiteQueen];
-            king = _bitboards[(int)Piece.WhiteKing];
-        }
-        else
-        {
-            pawns = _bitboards[(int)Piece.BlackPawn];
-            knights = _bitboards[(int)Piece.BlackKnight];
-            bishops = _bitboards[(int)Piece.BlackBishop];
-            rooks = _bitboards[(int)Piece.BlackRook];
-            queens = _bitboards[(int)Piece.BlackQueen];
-            king = _bitboards[(int)Piece.BlackKing];
-        }
-
-        MoveGenerator.GeneratePseudoLegalMoves(
-            pawns, knights, bishops, rooks, queens, king,
-            _allPiecesBB,
-            _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB, //own pieces
-            _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB, //enemy pieces
-            _isWhiteTurn,
-            moveList
-        );
-
+        //is move valid
         Move validMove = default;
-        bool isvalid = false;
+        bool isValid = false;
 
-        //check if move is in valid moves list
-        foreach (Move move in moveList)
+        foreach (Move move in _currentLegalMoves)
         {
             if (move.StartingPos == from && move.EndingPos == to)
             {
                 validMove = move;
-                isvalid = true;
+                isValid = true;
                 break;
             }
         }
 
-        //if it didnt get validated
-        if (!isvalid) return false;
+        if (!isValid) return false;
 
         //if it got here, the move is valid so execute the move
 
+        //update game state
         ulong fromBit = 1UL << from;
         ulong toBit = 1UL << to;
-
         Piece movingPiece = _boardSquares[from];
         Piece targetPiece = _boardSquares[to];
 
-        //capture
-        if (validMove.IsCapture)
+        //captures
+        if (validMove.IsCapture && targetPiece != Piece.None)
         {
-            //TODO: Handle en passant captures here
-            if (targetPiece != Piece.None)
-            {
-                _bitboards[(int)targetPiece] &= ~toBit;
-            }
+            _bitboards[(int)targetPiece] &= ~toBit;
         }
 
         //update moving piece bitboard
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
-
         _boardSquares[to] = movingPiece;
         _boardSquares[from] = Piece.None;
 
         UpdateTotalBitboards();
 
-        _isWhiteTurn = !_isWhiteTurn; //toggle turn
+        _isWhiteTurn = !_isWhiteTurn;
+
+        //have to generate legal moves after turn switch immediately
+        GenerateLegalMoves();
+
+        GameState state = CheckGameState();
+        if (state != GameState.Playing)
+        {
+            Debug.Log("Game Over: " + state);
+        }
 
         return true;
     }
 
     public void InvokeEvent(int from)
     {
-        List<Move> moveList = MoveGenerator.GetMovesFromSquare(from, GetPieceOnSquare(from), _allPiecesBB, 
-            _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB, //own pieces
-            _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB, //enemy pieces
-            _isWhiteTurn);
-
         ulong moves = 0UL;
 
-        foreach (Move move in moveList) 
+        foreach (Move move in _currentLegalMoves)
         {
-            int square = move.EndingPos;
-            moves |= 1UL << square;
+            if (move.StartingPos == from)
+            {
+                moves |= 1UL << move.EndingPos;
+            }
         }
 
         MovingPieceEvent.Invoke(moves);
@@ -216,30 +191,6 @@ public class Bitboards
 
         return 0UL;
     }
-
-    private ulong GetLookupFromSquare(int square)
-    {
-        //TODO: Change to generated moves so only legal moves show
-        //that will also fix that pawns only shows the diagonals that they can attack
-        Piece piece = GetPieceOnSquare(square);
-
-        switch (piece)
-        {
-            case Piece.WhitePawn:
-                return MoveGenerator.WhitePawnLookup[square];
-            case Piece.BlackPawn:
-                return MoveGenerator.BlackPawnLookup[square];
-            case Piece.WhiteKnight:
-            case Piece.BlackKnight:
-                return MoveGenerator.KnightLookup[square];
-            case Piece.WhiteKing:
-            case Piece.BlackKing:
-                return MoveGenerator.KingLookup[square];
-        }
-
-        return 0UL;
-    }
-
     private void UpdateTotalBitboards()
     {
         _whitePiecesBB = 0;
@@ -254,4 +205,140 @@ public class Bitboards
         }
         _allPiecesBB = _whitePiecesBB | _blackPiecesBB;
     }
+
+#region Ending Conditions
+
+    private int GetKingSquare(bool isWhite)
+    {
+        ulong kingBB = isWhite ? _bitboards[(int)Piece.WhiteKing] : _bitboards[(int)Piece.BlackKing];
+
+        for (int i = 0; i < 64; i++)
+        {
+            if (((kingBB >> i) & 1UL) != 0UL)
+                return i;
+        }
+        //not found
+        return -1;
+    }
+    private void GenerateLegalMoves()
+    {
+        _currentLegalMoves.Clear();
+
+        List<Move> pseudoMoves = new List<Move>();
+
+        //get correct bitboards based on turn
+        ulong pawns = _bitboards[_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
+        ulong knights = _bitboards[_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
+        ulong bishops = _bitboards[_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop];
+        ulong rooks = _bitboards[_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook];
+        ulong queens = _bitboards[_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
+        ulong king = _bitboards[_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
+
+        MoveGenerator.GeneratePseudoLegalMoves(
+            pawns, knights, bishops, rooks, queens, king,
+            _allPiecesBB,
+            _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
+            _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
+            _isWhiteTurn,
+            pseudoMoves
+        );
+
+        //filter out illegal moves that leave king in check
+        foreach (var move in pseudoMoves)
+        {
+            if (MakeMoveAndCheckLegality(move))
+            {
+                _currentLegalMoves.Add(move);
+            }
+        }
+    }
+    private bool MakeMoveAndCheckLegality(Move move)
+    {
+        //save current state
+        ulong fromBit = 1UL << move.StartingPos;
+        ulong toBit = 1UL << move.EndingPos;
+        Piece movingPiece = _boardSquares[move.StartingPos];
+        Piece capturedPiece = _boardSquares[move.EndingPos];
+
+        ulong savedWhiteBB = _whitePiecesBB;
+        ulong savedBlackBB = _blackPiecesBB;
+        ulong savedAllBB = _allPiecesBB;
+        ulong savedMovingPieceBB = _bitboards[(int)movingPiece];
+        ulong savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
+
+
+        //capture 
+        if (capturedPiece != Piece.None)
+        {
+            _bitboards[(int)capturedPiece] &= ~toBit;
+        }
+
+        //make move
+        _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+        _boardSquares[move.EndingPos] = movingPiece;
+        _boardSquares[move.StartingPos] = Piece.None;
+
+        UpdateTotalBitboards();
+
+        int kingSquare = GetKingSquare(_isWhiteTurn);
+
+        //check if king is attacked
+        bool isKingAttacked = MoveGenerator.IsSquareAttacked(
+            kingSquare,
+            !_isWhiteTurn, //by enemy
+            _allPiecesBB,
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn]
+        );
+
+        //return state to normal
+        _bitboards[(int)movingPiece] = savedMovingPieceBB;
+        if (capturedPiece != Piece.None) _bitboards[(int)capturedPiece] = savedCapturedPieceBB;
+
+        _whitePiecesBB = savedWhiteBB;
+        _blackPiecesBB = savedBlackBB;
+        _allPiecesBB = savedAllBB;
+
+        _boardSquares[move.StartingPos] = movingPiece;
+        _boardSquares[move.EndingPos] = capturedPiece;
+
+        //return if king is safe
+        return !isKingAttacked;
+    }
+    public GameState CheckGameState()
+    {
+        if (_currentLegalMoves.Count > 0)
+        {
+            return GameState.Playing;
+        }
+
+        int kingSquare = GetKingSquare(_isWhiteTurn);
+
+        bool isInCheck = MoveGenerator.IsSquareAttacked(
+            kingSquare,
+            !_isWhiteTurn,
+            _allPiecesBB,
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook], 
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen], 
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing],
+            _bitboards[!_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn]
+        );
+
+        if (isInCheck)
+        {
+            return GameState.Checkmate;
+        }
+        else
+        {
+            return GameState.Stalemate;
+        }
+    }
+
+    #endregion
 }
