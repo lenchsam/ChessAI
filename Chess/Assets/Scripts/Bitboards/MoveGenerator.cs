@@ -556,15 +556,12 @@ public static class MoveGenerator
 
             ulong moves = GetSliderAttacks(pieceType, fromSquare, allPieces);
 
-            // 2. Remove Own Pieces (can't capture friendly)
             moves &= ~ownPieces;
 
-            // 3. Add to list
             while (moves != 0)
             {
                 int toSquare = BitboardHelpers.PopLeastSignificantBit(ref moves);
 
-                // Check capture
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
                 moveList.Add(new Move(fromSquare, toSquare, isCapture));
@@ -624,50 +621,56 @@ public static class MoveGenerator
     //TODO: add en passant and promotions
     private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, List<Move> moveList)
     {
-        //directions offset
-        int forwardIndex = isWhite ? 8 : -8;
-        int doubleForwardIndex = isWhite ? 16 : -16;
+        ulong emptySquares = ~allPieces;
 
-        while (pawns != 0)
+        //prevents wrap arounds when capturing
+        ulong notAFile = 0xFEFEFEFEFEFEFEFEUL;
+        ulong notHFile = 0x7F7F7F7F7F7F7F7FUL;
+
+        if (isWhite)
         {
-            //gets the pawns location
-            int fromSquare = BitboardHelpers.PopLeastSignificantBit(ref pawns);
+            ulong singlePush = (pawns << 8) & emptySquares;
 
-            int forwardSquare = fromSquare + forwardIndex;
+            ulong rank3Mask = 0x0000000000FF0000UL;
+            ulong doublePush = ((singlePush & rank3Mask) << 8) & emptySquares;
 
-            if (forwardSquare >= 0 && forwardSquare < 64)
-            {
-                //empty square in front of pawn
-                if (((1UL << forwardSquare) & allPieces) == 0)
-                {
-                    moveList.Add(new Move(fromSquare, forwardSquare, false));
+            ulong captureLeft = ((pawns & notAFile) << 7) & enemyPieces;
+            ulong captureRight = ((pawns & notHFile) << 9) & enemyPieces;
 
-                    //check for double move
-                    bool isStartRank = isWhite ? (fromSquare >= 8 && fromSquare <= 15) : (fromSquare >= 48 && fromSquare <= 55);
+            GetMovesFromBitboard(singlePush, 8, false, moveList);  //single push
+            GetMovesFromBitboard(doublePush, 16, false, moveList); //double push
+            GetMovesFromBitboard(captureLeft, 7, true, moveList);  //capture
+            GetMovesFromBitboard(captureRight, 9, true, moveList); //capture
+        }
+        else
+        {
+            ulong singlePush = (pawns >> 8) & emptySquares;
 
-                    if (isStartRank)
-                    {
-                        int doubleSquare = fromSquare + doubleForwardIndex;
+            ulong rank6Mask = 0x0000FF0000000000UL;
+            ulong doublePush = ((singlePush & rank6Mask) >> 8) & emptySquares;
 
-                        //is square empty
-                        if (((1UL << doubleSquare) & allPieces) == 0)
-                        {
-                            moveList.Add(new Move(fromSquare, doubleSquare, false));
-                        }
-                    }
-                }
-            }
+            //right for black is left for the white POV
+            ulong captureRight = ((pawns & notHFile) >> 7) & enemyPieces;
+            ulong captureLeft = ((pawns & notAFile) >> 9) & enemyPieces;
+            
+            GetMovesFromBitboard(singlePush, -8, false, moveList);  //single push
+            GetMovesFromBitboard(doublePush, -16, false, moveList); //double push
+            GetMovesFromBitboard(captureLeft, -9, true, moveList);  //capture
+            GetMovesFromBitboard(captureRight, -7, true, moveList); //capture
+        }
+    }
 
-            //captures
-            ulong attackMask = isWhite ? WhitePawnLookup[fromSquare] : BlackPawnLookup[fromSquare];
+    private static void GetMovesFromBitboard(ulong bitboard, int offset, bool isCapture, List<Move> moveList)
+    {
+        while (bitboard != 0)
+        {
+            //get the index of the target square
+            int toIndex = BitboardHelpers.PopLeastSignificantBit(ref bitboard);
 
-            ulong validCaptures = attackMask & enemyPieces;
+            //calculate where the pawn came from
+            int fromIndex = toIndex - offset;
 
-            while (validCaptures != 0)
-            {
-                int toSquare = BitboardHelpers.PopLeastSignificantBit(ref validCaptures);
-                moveList.Add(new Move(fromSquare, toSquare, true));
-            }
+            moveList.Add(new Move(fromIndex, toIndex, isCapture));
         }
     }
     #endregion
