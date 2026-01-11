@@ -1,5 +1,6 @@
 public static class BitboardHelpers
 {
+#region Bitscanning
     //unity doesnt have bitoperations built in so I implemented debruijns method for bit scanning
     private static readonly int[] DeBruijnIndex64 =
     {
@@ -15,7 +16,7 @@ public static class BitboardHelpers
 
     private const ulong DeBruijn64 = 0x03f79d71b4cb0a89UL;
 
-    public static int BitScanForward(ulong bb)
+    private static int BitScanForward(ulong bb)
     {
         return DeBruijnIndex64[((bb & (~bb + 1)) * DeBruijn64) >> 58];
     }
@@ -25,6 +26,7 @@ public static class BitboardHelpers
         bb &= bb - 1;
         return square;
     }
+#endregion
     public static int CountBits(ulong bb)
     {
         int count = 0;
