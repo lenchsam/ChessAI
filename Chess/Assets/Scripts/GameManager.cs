@@ -1,3 +1,4 @@
+using TMPro.EditorUtilities;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -15,7 +16,6 @@ public class GameManager : MonoBehaviour
         BitboardScript = new Bitboards();
         _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
         _visualiseBitboard.SetHighlightColour(_boardSettings.highlightColor);
-
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -45,5 +45,11 @@ public class GameManager : MonoBehaviour
             GameObject piece = _board.GetPieceFromPosition(from);
             piece.transform.position = new Vector2(fromX, fromY);
         }
+    }
+
+    public void RestartGame()
+    {
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        _board.DisplayPieces(BitboardScript);
     }
 }

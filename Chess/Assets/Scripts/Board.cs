@@ -71,9 +71,18 @@ public class Board : MonoBehaviour
             }
         }
     }
+
+    public void ClearPieces()
+    {
+        foreach (Transform childTransform in _piecesParent.transform)
+        {
+            Destroy(childTransform.gameObject);
+        }
+    }
     public void DisplayPieces(Bitboards bitboards)
     {
-        for(int i = 0; i < 64; i++)
+        ClearPieces();
+        for (int i = 0; i < 64; i++)
         {
             Piece piece = bitboards.GetPieceOnSquare(i);
             if (piece != Piece.None)

@@ -28,6 +28,7 @@ public enum GameState
 public class Bitboards
 {
     public UnityEvent<ulong> MovingPieceEvent = new UnityEvent<ulong>();
+    public UnityEvent<GameState, bool> GameEnded = new UnityEvent<GameState, bool>();
 
     // ulong is a 64-bit unsigned integer
     // two hex digits (8 bits/1 byte) represents each row
@@ -51,8 +52,24 @@ public class Bitboards
 
     private List<Move> _currentLegalMoves = new List<Move>();
 
+    private void ResetGame()
+    {
+        _isWhiteTurn = true;
+
+        for (int i = 0; i < _bitboards.Length; i++) 
+        {
+            _bitboards[i] = 0UL;
+        }
+
+        _whitePiecesBB = 0UL;
+        _blackPiecesBB = 0UL;
+        _allPiecesBB = 0UL;
+
+    }
     public void FENtoBitboards(string FEN)
     {
+        ResetGame();
+
         int row = 7;
         int col = 0;
 
@@ -146,7 +163,7 @@ public class Bitboards
         GameState state = CheckGameState();
         if (state != GameState.Playing)
         {
-            Debug.Log("Game Over: " + state);
+            GameEnded.Invoke(state, !_isWhiteTurn);
         }
 
         return true;
@@ -339,6 +356,5 @@ public class Bitboards
             return GameState.Stalemate;
         }
     }
-
     #endregion
 }
