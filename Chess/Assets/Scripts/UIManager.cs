@@ -20,16 +20,22 @@ public class UIManager : MonoBehaviour
         DisableGameUI();
         EnableGameOverUI(state, isWhiteTurn);
     }
-
+    
     private void DisableGameUI()
     {
         _bitboardSwitcher.SetActive(false);
     }
 
+    //called on game restart
     public void DisableGameOverUI()
     {
         _gameOverBackground.SetActive(false);
     }
+    public void EnableGameUI()
+    {
+        _bitboardSwitcher.SetActive(true);
+    }
+
 
     private void EnableGameOverUI(GameState state, bool isWhiteTurn)
     {
