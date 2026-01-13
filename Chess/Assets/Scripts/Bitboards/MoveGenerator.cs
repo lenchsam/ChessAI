@@ -183,11 +183,13 @@ public static class MoveGenerator
     public static void GeneratePseudoLegalMoves(
         ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
-        bool isWhiteTurn, List<Move> moveList)
+        bool isWhiteTurn, 
+        ref Castling whiteCastling, ref Castling blackCastling, 
+        List<Move> moveList)
     {
         //non sliding pieces
         GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
-        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList);
+        GenerateKingMoves(kings, ownPieces, enemyPieces, whiteCastling, blackCastling, moveList);
         GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList);
 
         //sliding pieces
@@ -230,7 +232,7 @@ public static class MoveGenerator
 
             case Piece.WhiteKing:
             case Piece.BlackKing:
-                GenerateKingMoves(mask, ownPieces, enemyPieces, moves);
+                //GenerateKingMoves(mask, ownPieces, enemyPieces, moves);
                 break;
 
             case Piece.WhitePawn:
@@ -564,7 +566,7 @@ public static class MoveGenerator
 
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
-                moveList.Add(new Move(fromSquare, toSquare, isCapture));
+                moveList.Add(new Move(fromSquare, toSquare, isCapture, PawnPromotion.None));
             }
         }
     }
@@ -589,14 +591,14 @@ public static class MoveGenerator
                 //(1UL << toSquare)creates a bitmask for that specific square
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
-                moveList.Add(new Move(fromSquare, toSquare, isCapture));
+                moveList.Add(new Move(fromSquare, toSquare, isCapture, PawnPromotion.None));
             }
         }
     }
 
     //pseudo legal king moves 
     //TODO: add castling
-    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, List<Move> moveList)
+    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, Castling whiteCastling, Castling blackCastling, List<Move> moveList)
     {
         while (kings != 0)
         {
@@ -612,8 +614,10 @@ public static class MoveGenerator
             {
                 int toSquare = BitboardHelpers.PopLeastSignificantBit(ref moves);
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
-                moveList.Add(new Move(fromSquare, toSquare, isCapture));
+                moveList.Add(new Move(fromSquare, toSquare, isCapture, PawnPromotion.None));
             }
+
+            //castling
         }
     }
 
@@ -627,28 +631,36 @@ public static class MoveGenerator
         ulong notAFile = 0xFEFEFEFEFEFEFEFEUL;
         ulong notHFile = 0x7F7F7F7F7F7F7F7FUL;
 
+        ulong rank8Mask = 0xFF00000000000000UL;
+        ulong rank1Mask = 0x00000000000000FFUL;
+        
+        ulong notRank8 = ~rank8Mask;
+        ulong notRank1 = ~rank1Mask;
+
         if (isWhite)
         {
-            ulong singlePush = (pawns << 8) & emptySquares;
+            ulong singlePush = (pawns  << 8) & emptySquares;
 
             ulong rank3Mask = 0x0000000000FF0000UL;
             ulong doublePush = ((singlePush & rank3Mask) << 8) & emptySquares;
 
+            ulong quietPush = singlePush & notRank8;
+            ulong promotionPush = singlePush & rank8Mask;
+
+            GetMovesFromBitboard(quietPush, 8, false, moveList);  //single push, no promotion
+            AddPromotionMoves(promotionPush, 8, false, moveList);
+
+            //cannot promote from double push so no need to account for it here
+            GetMovesFromBitboard(doublePush, 16, false, moveList); //double push
+
             ulong captureLeft = ((pawns & notAFile) << 7) & enemyPieces;
             ulong captureRight = ((pawns & notHFile) << 9) & enemyPieces;
 
-            GetMovesFromBitboard(singlePush, 8, false, moveList);  //single push
-            GetMovesFromBitboard(doublePush, 16, false, moveList); //double push
             GetMovesFromBitboard(captureLeft, 7, true, moveList);  //capture
             GetMovesFromBitboard(captureRight, 9, true, moveList); //capture
 
-            //pawn promotions
-            ulong rank8Mask = 0xFF00000000000000UL;
-            ulong promotions = singlePush & rank8Mask;
-            if(promotions != 0)
-            {
-                //A pawn has promoted
-            }
+            AddPromotionMoves(captureLeft & rank8Mask, 7, true, moveList);  //promotion from capture
+            AddPromotionMoves(captureRight & rank8Mask, 9, true, moveList); //promotion from capture
         }
         else
         {
@@ -657,17 +669,42 @@ public static class MoveGenerator
             ulong rank6Mask = 0x0000FF0000000000UL;
             ulong doublePush = ((singlePush & rank6Mask) >> 8) & emptySquares;
 
+            ulong quietPush = singlePush & notRank1;
+            ulong promotionPush = singlePush & rank1Mask;
+
+            GetMovesFromBitboard(quietPush, -8, false, moveList);  //single push, no promotion
+            AddPromotionMoves(promotionPush, -8, false, moveList);
+
+            //cannot promote from double push so no need to account for it here
+            GetMovesFromBitboard(doublePush, -16, false, moveList); //double push
+
             //right for black is left for the white POV
             ulong captureRight = ((pawns & notHFile) >> 7) & enemyPieces;
             ulong captureLeft = ((pawns & notAFile) >> 9) & enemyPieces;
             
-            GetMovesFromBitboard(singlePush, -8, false, moveList);  //single push
-            GetMovesFromBitboard(doublePush, -16, false, moveList); //double push
             GetMovesFromBitboard(captureLeft, -9, true, moveList);  //capture
             GetMovesFromBitboard(captureRight, -7, true, moveList); //capture
+
+            AddPromotionMoves(captureLeft & rank1Mask, -7, true, moveList);  //promotion from capture
+            AddPromotionMoves(captureRight & rank1Mask, -9, true, moveList); //promotion from capture
         }
     }
 
+    private static void AddPromotionMoves(ulong promotionPawns, int offset, bool isCapture, List<Move> movesList)
+    {
+        while (promotionPawns != 0) 
+        {
+            //get least significant bit
+            int toIndex = BitboardHelpers.PopLeastSignificantBit(ref promotionPawns);
+
+            int fromIndex = toIndex - offset;
+
+            movesList.Add(new Move(fromIndex, toIndex, isCapture, PawnPromotion.PromoteQueen));
+            movesList.Add(new Move(fromIndex, toIndex, isCapture, PawnPromotion.PromoteBishop));
+            movesList.Add(new Move(fromIndex, toIndex, isCapture, PawnPromotion.PromoteRook));
+            movesList.Add(new Move(fromIndex, toIndex, isCapture, PawnPromotion.PromoteKnight));
+        }
+    }
     private static void GetMovesFromBitboard(ulong bitboard, int offset, bool isCapture, List<Move> moveList)
     {
         while (bitboard != 0)
@@ -678,7 +715,7 @@ public static class MoveGenerator
             //calculate where the pawn came from
             int fromIndex = toIndex - offset;
 
-            moveList.Add(new Move(fromIndex, toIndex, isCapture));
+            moveList.Add(new Move(fromIndex, toIndex, isCapture, PawnPromotion.None));
         }
     }
     #endregion

@@ -12,20 +12,36 @@ public struct Move
 
     public bool IsCapture;
 
-    public byte CastleRights;
-    public byte Promotion;
+    public PawnPromotion PawnPromotion;
 
-    public Move(int from, int to, bool isCapture, byte castleRights, byte promotion)
+    public Move(int from, int to, bool isCapture, PawnPromotion promotion)
     {
         StartingPos = from;
         EndingPos = to;
         IsCapture = isCapture;
-        CastleRights = castleRights;
-        Promotion = promotion;
+        PawnPromotion = promotion;
     }
-
-
 }
+public enum PawnPromotion : byte
+{
+    None = 0,
+    PromoteQueen = 1,
+    PromoteRook = 2,
+    PromoteBishop = 4,
+    PromoteKnight = 8,
+}
+public enum Castling : byte {
+    None = 0,       //0000
+    WhiteKing =  1, //0001
+    WhiteQueen = 2, //0010
+    BlackKing =  4, //0100
+    BlackQueen = 8, //1000
+
+    AnyWhite = 3,   //0011
+    AnyBlack = 12,  //1100
+    All = 15,       //1111
+}
+
 public enum GameState
 {
     Playing,
@@ -58,6 +74,9 @@ public class Bitboards
     };
 
     private List<Move> _currentLegalMoves = new List<Move>();
+
+    Castling _whiteCastlingRights = Castling.AnyWhite;
+    Castling _blackCastlingRights = Castling.AnyBlack;
 
     private void ResetGame()
     {
@@ -148,6 +167,19 @@ public class Bitboards
         ulong toBit = 1UL << to;
         Piece movingPiece = _boardSquares[from];
         Piece targetPiece = _boardSquares[to];
+
+        //removes castling rights if king moves
+        switch (movingPiece)
+        {
+            case Piece.WhiteKing:
+                _whiteCastlingRights = Castling.None;
+                break;
+            case Piece.BlackKing:
+                _blackCastlingRights = Castling.None;
+                break;
+        }
+
+        if(validMove)
 
         //captures
         if (validMove.IsCapture && targetPiece != Piece.None)
@@ -264,6 +296,7 @@ public class Bitboards
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
             _isWhiteTurn,
+            ref _whiteCastlingRights, ref _blackCastlingRights,
             pseudoMoves
         );
 
