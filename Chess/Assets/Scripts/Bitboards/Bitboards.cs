@@ -6,22 +6,69 @@ using static MoveGenerator;
 
 public struct Move
 {
+    //raw data
+    private ushort Value;
 
-    public int StartingPos;
-    public int EndingPos;
-
-    public bool IsCapture;
-
-    public PawnPromotion PawnPromotion;
-
-    public Move(int from, int to, bool isCapture, PawnPromotion promotion)
+    public Move(int from, int to, int flag)
     {
-        StartingPos = from;
-        EndingPos = to;
-        IsCapture = isCapture;
-        PawnPromotion = promotion;
+        //to: bits 0-5
+        //from: bits 6-11
+        //flag: bits 12-15
+        Value = (ushort)((to & 0x3F) | ((from & 0x3F) << 6) | ((flag & 0xF) << 12));
+    }
+
+    //decoding
+    public int EndingPos => Value & 0x3F;
+    public int StartingPos => (Value >> 6) & 0x3F;
+    public int Flag => (Value >> 12) & 0xF;
+
+    public bool IsCapture => (Flag & MoveFlag.CaptureMask) != 0;
+
+    public bool IsPromotion => (Flag & MoveFlag.PromotionMask) != 0;
+
+    //get promotion piece type directly from flag
+    public Piece PromotionPieceType
+    {
+        get
+        {
+            switch (Flag)
+            {
+                case MoveFlag.PromoteQueen: case MoveFlag.PromoteQueenCapture: return Piece.WhiteQueen;
+                case MoveFlag.PromoteRook: case MoveFlag.PromoteRookCapture: return Piece.WhiteRook;
+                case MoveFlag.PromoteBishop: case MoveFlag.PromoteBishopCapture: return Piece.WhiteBishop;
+                case MoveFlag.PromoteKnight: case MoveFlag.PromoteKnightCapture: return Piece.WhiteKnight;
+                default: return Piece.None;
+            }
+        }
     }
 }
+
+public struct MoveFlag
+{
+    public const int None = 0;                  //quiet Move
+    public const int PawnDoublePush = 1;        //double pawn push
+    public const int CastleKingSide = 2;        //king side castling
+    public const int CastleQueenSide = 3;       //queen side castling
+    public const int Capture = 4;               //capture
+    public const int EnPassantCapture = 5;      //en passant capture
+
+    //promotion
+    public const int PromoteKnight = 8;
+    public const int PromoteBishop = 9;
+    public const int PromoteRook = 10;
+    public const int PromoteQueen = 11;
+
+    //romotion with capture
+    public const int PromoteKnightCapture = 12;
+    public const int PromoteBishopCapture = 13;
+    public const int PromoteRookCapture = 14;
+    public const int PromoteQueenCapture = 15;
+
+    //masks for faster checking
+    public const int PromotionMask = 8; // 1000 binary
+    public const int CaptureMask = 4;   // 0100 binary
+}
+
 public enum PawnPromotion : byte
 {
     None = 0,           //0000
@@ -30,18 +77,6 @@ public enum PawnPromotion : byte
     PromoteBishop = 4,  //0100
     PromoteKnight = 8,  //1000
 }
-public enum Castling : byte {
-    None = 0,       //0000
-    WhiteKing =  1, //0001
-    WhiteQueen = 2, //0010
-    BlackKing =  4, //0100
-    BlackQueen = 8, //1000
-
-    AnyWhite = 3,   //0011
-    AnyBlack = 12,  //1100
-    All = 15,       //1111
-}
-
 public enum GameState
 {
     Playing,
@@ -74,9 +109,6 @@ public class Bitboards
     };
 
     private List<Move> _currentLegalMoves = new List<Move>();
-
-    Castling _whiteCastlingRights = Castling.AnyWhite;
-    Castling _blackCastlingRights = Castling.AnyBlack;
 
     private void ResetGame()
     {
@@ -161,20 +193,28 @@ public class Bitboards
 
         foreach (Move move in _currentLegalMoves)
         {
-            if (move.StartingPos == from && move.EndingPos == to)
+            if (move.StartingPos == from && move.EndingPos== to)
             {
-                //if its promoting check chosen promotion type
-                if (move.PawnPromotion != PawnPromotion.None)
+                if (move.IsPromotion)
                 {
-                    if (move.PawnPromotion == chosenPromotion)
+                    //if its a promotion, check the chosen promotion type
+                    Piece targetPieceType = GetPieceFromPromotionEnum(chosenPromotion);
+
+                    // Compare the move's promotion type (e.g. WhiteQueen) with the user's choice
+                    if (move.PromotionPieceType == Piece.WhiteQueen && targetPieceType == Piece.WhiteQueen) isValid = true;
+                    else if (move.PromotionPieceType == Piece.WhiteRook && targetPieceType == Piece.WhiteRook) isValid = true;
+                    else if (move.PromotionPieceType == Piece.WhiteBishop && targetPieceType == Piece.WhiteBishop) isValid = true;
+                    else if (move.PromotionPieceType == Piece.WhiteKnight && targetPieceType == Piece.WhiteKnight) isValid = true;
+
+                    if (isValid)
                     {
                         validMove = move;
-                        isValid = true;
                         break;
                     }
                 }
-                else //not promoting
+                else
                 {
+                    //normal move
                     validMove = move;
                     isValid = true;
                     break;
@@ -192,39 +232,8 @@ public class Bitboards
         Piece movingPiece = _boardSquares[from];
         Piece targetPiece = _boardSquares[to];
 
-        //removes castling rights if king moves
-        switch (movingPiece)
-        {
-            case Piece.WhiteKing:
-                _whiteCastlingRights = Castling.None;
-                break;
-            case Piece.BlackKing:
-                _blackCastlingRights = Castling.None;
-                break;
-            case Piece.WhiteRook:
-                if(from == 0)
-                {
-                    _whiteCastlingRights &= ~Castling.WhiteQueen;
-                } 
-                if(from == 7)
-                {
-                    _whiteCastlingRights &= ~Castling.WhiteKing;
-                }
-                break;
-            case Piece.BlackRook:
-                if (from == 56) 
-                { 
-                    _blackCastlingRights &= ~Castling.BlackQueen; 
-                }
-                if (from == 63)
-                {
-                    _blackCastlingRights &= ~Castling.BlackKing;
-                }
-                break;
-        }
-
         //captures
-        if (validMove.IsCapture && targetPiece != Piece.None)
+        if (validMove.IsCapture)
         {
             _bitboards[(int)targetPiece] &= ~toBit;
         }
@@ -234,15 +243,22 @@ public class Bitboards
         _boardSquares[to] = movingPiece;
         _boardSquares[from] = Piece.None;
 
-        if (validMove.PawnPromotion != PawnPromotion.None)
+        if (validMove.IsPromotion)
         {
             //remove the pawn from the destination bitboard
             _bitboards[(int)movingPiece] &= ~toBit;
 
-            Piece promotedPieceType = GetPromotedPiece(validMove.PawnPromotion, _isWhiteTurn);
+            //get promoted piece type
+            Piece promotedPieceType = validMove.PromotionPieceType;
 
+            //if its blacks turn, adjust piece type
+            if (!_isWhiteTurn)
+            {
+                promotedPieceType = (Piece)((int)promotedPieceType + 6);
+            }
+
+            //place promoted piece
             _bitboards[(int)promotedPieceType] |= toBit;
-
             _boardSquares[to] = promotedPieceType;
         }
 
@@ -262,20 +278,15 @@ public class Bitboards
         return true;
     }
 
-    private Piece GetPromotedPiece(PawnPromotion promotion, bool isWhite)
+    private Piece GetPieceFromPromotionEnum(PawnPromotion promo)
     {
-        switch (promotion)
+        switch (promo)
         {
-            case PawnPromotion.PromoteQueen:
-                return isWhite ? Piece.WhiteQueen : Piece.BlackQueen;
-            case PawnPromotion.PromoteRook:
-                return isWhite ? Piece.WhiteRook : Piece.BlackRook;
-            case PawnPromotion.PromoteBishop:
-                return isWhite ? Piece.WhiteBishop : Piece.BlackBishop;
-            case PawnPromotion.PromoteKnight:
-                return isWhite ? Piece.WhiteKnight : Piece.BlackKnight;
-            default:
-                return isWhite ? Piece.WhiteQueen : Piece.BlackQueen;
+            case PawnPromotion.PromoteQueen: return Piece.WhiteQueen;
+            case PawnPromotion.PromoteRook: return Piece.WhiteRook;
+            case PawnPromotion.PromoteBishop: return Piece.WhiteBishop;
+            case PawnPromotion.PromoteKnight: return Piece.WhiteKnight;
+            default: return Piece.None;
         }
     }
 
@@ -378,7 +389,6 @@ public class Bitboards
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
             _isWhiteTurn,
-            ref _whiteCastlingRights, ref _blackCastlingRights,
             pseudoMoves
         );
 
