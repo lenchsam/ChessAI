@@ -12,12 +12,19 @@ public struct Move
 
     public bool IsCapture;
 
-    public Move(int from, int to, bool isCapture)
+    public byte CastleRights;
+    public byte Promotion;
+
+    public Move(int from, int to, bool isCapture, byte castleRights, byte promotion)
     {
         StartingPos = from;
         EndingPos = to;
         IsCapture = isCapture;
+        CastleRights = castleRights;
+        Promotion = promotion;
     }
+
+
 }
 public enum GameState
 {

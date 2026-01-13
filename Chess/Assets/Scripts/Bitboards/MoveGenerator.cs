@@ -641,6 +641,14 @@ public static class MoveGenerator
             GetMovesFromBitboard(doublePush, 16, false, moveList); //double push
             GetMovesFromBitboard(captureLeft, 7, true, moveList);  //capture
             GetMovesFromBitboard(captureRight, 9, true, moveList); //capture
+
+            //pawn promotions
+            ulong rank8Mask = 0xFF00000000000000UL;
+            ulong promotions = singlePush & rank8Mask;
+            if(promotions != 0)
+            {
+                //A pawn has promoted
+            }
         }
         else
         {
