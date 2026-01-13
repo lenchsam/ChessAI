@@ -112,7 +112,7 @@ public class Board : MonoBehaviour
         return _pieceObjects[pos];
     }
 
-    public void MovePieceVisual(int oldSquare, int newSquare)
+    public void MovePieceVisual(int oldSquare, int newSquare, Piece promotedPiece = Piece.None)
     {
         GameObject pieceToMove = _pieceObjects[oldSquare];
 
@@ -137,6 +137,19 @@ public class Board : MonoBehaviour
 
         _pieceObjects[newSquare] = _pieceObjects[oldSquare];
         _pieceObjects[oldSquare] = null;
+
+        if (promotedPiece != Piece.None)
+        {
+            //destroy old pawn, replace with new piece
+            Destroy(_pieceObjects[newSquare]);
+
+            Vector2 position = new Vector2(newX, newY);
+            GameObject newPiecePrefab = GetPiecePrefab(promotedPiece);
+
+            GameObject newInstance = Instantiate(newPiecePrefab, new Vector3(newX, newY, -1), Quaternion.identity, _piecesParent.transform);
+
+            _pieceObjects[newSquare] = newInstance;
+        }
     }
 
 

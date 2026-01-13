@@ -656,8 +656,8 @@ public static class MoveGenerator
             ulong captureLeft = ((pawns & notAFile) << 7) & enemyPieces;
             ulong captureRight = ((pawns & notHFile) << 9) & enemyPieces;
 
-            GetMovesFromBitboard(captureLeft, 7, true, moveList);  //capture
-            GetMovesFromBitboard(captureRight, 9, true, moveList); //capture
+            GetMovesFromBitboard(captureLeft & notRank8, 7, true, moveList);  //capture
+            GetMovesFromBitboard(captureRight & notRank8, 9, true, moveList); //capture
 
             AddPromotionMoves(captureLeft & rank8Mask, 7, true, moveList);  //promotion from capture
             AddPromotionMoves(captureRight & rank8Mask, 9, true, moveList); //promotion from capture
@@ -682,11 +682,11 @@ public static class MoveGenerator
             ulong captureRight = ((pawns & notHFile) >> 7) & enemyPieces;
             ulong captureLeft = ((pawns & notAFile) >> 9) & enemyPieces;
             
-            GetMovesFromBitboard(captureLeft, -9, true, moveList);  //capture
-            GetMovesFromBitboard(captureRight, -7, true, moveList); //capture
+            GetMovesFromBitboard(captureLeft & notRank1, -9, true, moveList);  //capture
+            GetMovesFromBitboard(captureRight & notRank1, -7, true, moveList); //capture
 
-            AddPromotionMoves(captureLeft & rank1Mask, -7, true, moveList);  //promotion from capture
-            AddPromotionMoves(captureRight & rank1Mask, -9, true, moveList); //promotion from capture
+            AddPromotionMoves(captureLeft & rank1Mask, -9, true, moveList);  //promotion from capture
+            AddPromotionMoves(captureRight & rank1Mask, -7, true, moveList); //promotion from capture
         }
     }
 

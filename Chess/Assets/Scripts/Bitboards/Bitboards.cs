@@ -92,6 +92,17 @@ public class Bitboards
         _allPiecesBB = 0UL;
 
     }
+
+    public List<Move> GetCurrentLegalMoves()
+    {
+        return _currentLegalMoves;
+    }
+
+    public void SetTurn(bool isWhite)
+    {
+        _isWhiteTurn = isWhite;
+    }
+
     public void FENtoBitboards(string FEN)
     {
         ResetGame();
@@ -152,6 +163,7 @@ public class Bitboards
         {
             if (move.StartingPos == from && move.EndingPos == to)
             {
+                //if  its promoting it will pick first one found here, needs to be fixed later
                 validMove = move;
                 isValid = true;
                 break;
@@ -177,9 +189,27 @@ public class Bitboards
             case Piece.BlackKing:
                 _blackCastlingRights = Castling.None;
                 break;
+            case Piece.WhiteRook:
+                if(from == 0)
+                {
+                    _whiteCastlingRights &= ~Castling.WhiteQueen;
+                } 
+                if(from == 7)
+                {
+                    _whiteCastlingRights &= ~Castling.WhiteKing;
+                }
+                break;
+            case Piece.BlackRook:
+                if (from == 56) 
+                { 
+                    _blackCastlingRights &= ~Castling.BlackQueen; 
+                }
+                if (from == 63)
+                {
+                    _blackCastlingRights &= ~Castling.BlackKing;
+                }
+                break;
         }
-
-        if(validMove)
 
         //captures
         if (validMove.IsCapture && targetPiece != Piece.None)
@@ -191,6 +221,18 @@ public class Bitboards
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
         _boardSquares[to] = movingPiece;
         _boardSquares[from] = Piece.None;
+
+        if (validMove.PawnPromotion != PawnPromotion.None)
+        {
+            //remove the pawn from the destination bitboard
+            _bitboards[(int)movingPiece] &= ~toBit;
+
+            Piece promotedPieceType = GetPromotedPiece(validMove.PawnPromotion, _isWhiteTurn);
+
+            _bitboards[(int)promotedPieceType] |= toBit;
+
+            _boardSquares[to] = promotedPieceType;
+        }
 
         UpdateTotalBitboards();
 
@@ -206,6 +248,23 @@ public class Bitboards
         }
 
         return true;
+    }
+
+    private Piece GetPromotedPiece(PawnPromotion promotion, bool isWhite)
+    {
+        switch (promotion)
+        {
+            case PawnPromotion.PromoteQueen:
+                return isWhite ? Piece.WhiteQueen : Piece.BlackQueen;
+            case PawnPromotion.PromoteRook:
+                return isWhite ? Piece.WhiteRook : Piece.BlackRook;
+            case PawnPromotion.PromoteBishop:
+                return isWhite ? Piece.WhiteBishop : Piece.BlackBishop;
+            case PawnPromotion.PromoteKnight:
+                return isWhite ? Piece.WhiteKnight : Piece.BlackKnight;
+            default:
+                return isWhite ? Piece.WhiteQueen : Piece.BlackQueen;
+        }
     }
 
     public void InvokeEvent(int from)
