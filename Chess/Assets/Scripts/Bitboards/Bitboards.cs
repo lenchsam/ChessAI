@@ -24,11 +24,11 @@ public struct Move
 }
 public enum PawnPromotion : byte
 {
-    None = 0,
-    PromoteQueen = 1,
-    PromoteRook = 2,
-    PromoteBishop = 4,
-    PromoteKnight = 8,
+    None = 0,           //0000
+    PromoteQueen = 1,   //0001
+    PromoteRook = 2,    //0010
+    PromoteBishop = 4,  //0100
+    PromoteKnight = 8,  //1000
 }
 public enum Castling : byte {
     None = 0,       //0000
@@ -153,7 +153,7 @@ public class Bitboards
         return _boardSquares[squareIndex];
     }
 
-    public bool MovePiece(int from, int to)
+    public bool MovePiece(int from, int to, PawnPromotion chosenPromotion = PawnPromotion.None)
     {
         //is move valid
         Move validMove = default;
@@ -163,10 +163,22 @@ public class Bitboards
         {
             if (move.StartingPos == from && move.EndingPos == to)
             {
-                //if  its promoting it will pick first one found here, needs to be fixed later
-                validMove = move;
-                isValid = true;
-                break;
+                //if its promoting check chosen promotion type
+                if (move.PawnPromotion != PawnPromotion.None)
+                {
+                    if (move.PawnPromotion == chosenPromotion)
+                    {
+                        validMove = move;
+                        isValid = true;
+                        break;
+                    }
+                }
+                else //not promoting
+                {
+                    validMove = move;
+                    isValid = true;
+                    break;
+                }
             }
         }
 
@@ -320,8 +332,19 @@ public class Bitboards
         }
         _allPiecesBB = _whitePiecesBB | _blackPiecesBB;
     }
+    public bool IsPromotionMove(int from, int to)
+    {
+        Piece piece = _boardSquares[from];
 
-#region Ending Conditions
+        //is it a pawn
+        if (piece != Piece.WhitePawn && piece != Piece.BlackPawn) return false;
+
+        //is a pawn moving to last rank
+        int toRank = to / 8;
+        return toRank == 0 || toRank == 7;
+    }
+
+    #region Ending Conditions
 
     private int GetKingSquare(bool isWhite)
     {

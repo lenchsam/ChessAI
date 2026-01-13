@@ -1,6 +1,6 @@
-using TMPro.EditorUtilities;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +9,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private BoardSettings _boardSettings;
     [SerializeField] private VisualiseBitboard _visualiseBitboard;
+
+    [Header("Promotion UI Elements")]
+    [SerializeField] private GameObject _promotionUI;
+    [SerializeField] private Button _queenPromotion;
+    [SerializeField] private Button _rookPromotion;
+    [SerializeField] private Button _bishopPromotion;
+    [SerializeField] private Button _knightPromotion;
+
+    private int _pendingPromotionFrom;
+    private int _pendingPromotionTo;
 
     public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
@@ -22,6 +32,11 @@ public class GameManager : MonoBehaviour
     {
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
+        _queenPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteQueen));
+        _rookPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteRook));
+        _bishopPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteBishop));
+        _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));
+
         //uppercase = white lowercase = black
         BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
@@ -31,41 +46,52 @@ public class GameManager : MonoBehaviour
 
     void OnMoveRequestedHandler(int from, int to)
     {
-        //promotion handling
-        PawnPromotion promotionType = PawnPromotion.None;
-
-        foreach (var move in BitboardScript.GetCurrentLegalMoves())
+        //check for promotion
+        if (BitboardScript.IsPromotionMove(from, to))
         {
-            if (move.StartingPos == from && move.EndingPos == to && move.PawnPromotion != PawnPromotion.None)
-            {
-                promotionType = move.PawnPromotion;
-                break;
-            }
+            _pendingPromotionFrom = from;
+            _pendingPromotionTo = to;
+
+            _promotionUI.SetActive(true);
+
+            return;
         }
 
-        //attempty move
-        bool wasMoveMade = BitboardScript.MovePiece(from, to);
+        //normal move
+        FinalizeMove(from, to, PawnPromotion.None);
+    }
+    private void OnPromotionButton(PawnPromotion type)
+    {
+        _promotionUI.SetActive(false);
+        FinalizeMove(_pendingPromotionFrom, _pendingPromotionTo, type);
+    }
+
+    public void FinalizeMove(int from, int to, PawnPromotion promotionType)
+    {
+        bool wasMoveMade = BitboardScript.MovePiece(from, to, promotionType);
+
         if (wasMoveMade)
         {
-            Piece promotedPieceVisual = Piece.None;
+            Piece visualPiece = Piece.None;
 
+            // Convert logic enum to visual enum
             if (promotionType != PawnPromotion.None)
             {
-                //>=56 is rank 8
-                bool isWhitePiece = (to >= 56);
-                promotedPieceVisual = GetPieceFromPromotion(promotionType, isWhitePiece);
+                bool isWhite = (to >= 56);
+                visualPiece = GetPieceFromPromotion(promotionType, isWhite);
             }
 
-            _board.MovePieceVisual(from, to, promotedPieceVisual);
+            _board.MovePieceVisual(from, to, visualPiece);
             _playerController.ToggleIsWhite();
         }
         else
         {
+            //move not legal
+            //reset piece position
             int fromX = from % 8;
             int fromY = from / 8;
-            //resent piece to original position
             GameObject piece = _board.GetPieceFromPosition(from);
-            piece.transform.position = new Vector2(fromX, fromY);
+            if (piece != null) piece.transform.position = new Vector2(fromX, fromY);
         }
     }
 
