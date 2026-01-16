@@ -30,7 +30,7 @@ public class PerftTest : MonoBehaviour
 
         sw.Stop();
 
-        ulong nps = totalNodes / (ulong)(sw.ElapsedMilliseconds / 1000);
+        ulong nps = (totalNodes * 1000) / (ulong)(sw.ElapsedMilliseconds);
 
         UnityEngine.Debug.Log($"Perft({_depth}) Nodes: {totalNodes} | Time: {sw.ElapsedMilliseconds}ms | NPS: {nps:N0}");
     }
