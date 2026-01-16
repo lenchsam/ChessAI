@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.WSA;
 using static BitboardHelpers;
 using static MoveGenerator;
 
@@ -178,7 +179,7 @@ public class Bitboards
         }
         UpdateTotalBitboards();
 
-        GenerateLegalMoves();
+        GenerateLegalMoves(_currentLegalMoves);
     }
 
     public Piece GetPieceOnSquare(int squareIndex)
@@ -268,7 +269,7 @@ public class Bitboards
         _isWhiteTurn = !_isWhiteTurn;
 
         //have to generate legal moves after turn switch immediately
-        GenerateLegalMoves();
+        GenerateLegalMoves(_currentLegalMoves);
         GameState state = CheckGameState();
         if (state != GameState.Playing)
         {
@@ -369,10 +370,9 @@ public class Bitboards
         //not found
         return -1;
     }
-    private void GenerateLegalMoves()
+    //public for perft test
+    public int GenerateLegalMoves(CustomMovesList moves)
     {
-        _currentLegalMoves.Clear();
-
         CustomMovesList pseudoMoves = new CustomMovesList();
 
         //get correct bitboards based on turn
@@ -396,10 +396,16 @@ public class Bitboards
         {
             if (MakeMoveAndCheckLegality(move))
             {
-                _currentLegalMoves.Add(move);
+                moves.Add(move);
             }
         }
+        return moves.Length;
     }
+    ulong savedWhiteBB;
+    ulong savedBlackBB;
+    ulong savedAllBB;
+    ulong savedMovingPieceBB;
+    ulong savedCapturedPieceBB;
     private bool MakeMoveAndCheckLegality(Move move)
     {
         //save current state
@@ -408,11 +414,11 @@ public class Bitboards
         Piece movingPiece = _boardSquares[move.StartingPos];
         Piece capturedPiece = _boardSquares[move.EndingPos];
 
-        ulong savedWhiteBB = _whitePiecesBB;
-        ulong savedBlackBB = _blackPiecesBB;
-        ulong savedAllBB = _allPiecesBB;
-        ulong savedMovingPieceBB = _bitboards[(int)movingPiece];
-        ulong savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
+        savedWhiteBB = _whitePiecesBB;
+        savedBlackBB = _blackPiecesBB;
+        savedAllBB = _allPiecesBB;
+        savedMovingPieceBB = _bitboards[(int)movingPiece];
+        savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
 
 
         //capture 
@@ -456,6 +462,36 @@ public class Bitboards
 
         //return if king is safe
         return !isKingAttacked;
+    }
+
+    public void MakeMove(Move move)
+    {
+        ulong fromBit = 1UL << move.StartingPos;
+        ulong toBit = 1UL << move.EndingPos;
+
+        if (_boardSquares[move.EndingPos] != Piece.None)
+        {
+            _bitboards[(int)_boardSquares[move.EndingPos]] &= ~toBit;
+        }
+
+        //make move
+        _bitboards[(int)_boardSquares[move.StartingPos]] ^= (fromBit | toBit);
+        _boardSquares[move.EndingPos] = _boardSquares[move.StartingPos];
+        _boardSquares[move.StartingPos] = Piece.None;
+
+        UpdateTotalBitboards();
+    }
+    public void UndoMove(Move move)
+    {
+        _bitboards[(int)_boardSquares[move.StartingPos]] = savedMovingPieceBB;
+        if (_boardSquares[move.EndingPos] != Piece.None) _bitboards[(int)_boardSquares[move.EndingPos]] = savedCapturedPieceBB;
+
+        _whitePiecesBB = savedWhiteBB;
+        _blackPiecesBB = savedBlackBB;
+        _allPiecesBB = savedAllBB;
+
+        _boardSquares[move.StartingPos] = _boardSquares[move.StartingPos];
+        _boardSquares[move.EndingPos] = _boardSquares[move.EndingPos];
     }
     public GameState CheckGameState()
     {
