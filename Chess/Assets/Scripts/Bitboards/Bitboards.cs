@@ -373,6 +373,7 @@ public class Bitboards
     //public for perft test
     public int GenerateLegalMoves(CustomMovesList moves)
     {
+        _currentLegalMoves.Clear();
         CustomMovesList pseudoMoves = new CustomMovesList();
 
         //get correct bitboards based on turn
@@ -403,11 +404,6 @@ public class Bitboards
         }
         return moves.Length;
     }
-    ulong savedWhiteBB;
-    ulong savedBlackBB;
-    ulong savedAllBB;
-    ulong savedMovingPieceBB;
-    ulong savedCapturedPieceBB;
     private bool MakeMoveAndCheckLegality(Move move)
     {
         //save current state
@@ -416,11 +412,11 @@ public class Bitboards
         Piece movingPiece = _boardSquares[move.StartingPos];
         Piece capturedPiece = _boardSquares[move.EndingPos];
 
-        savedWhiteBB = _whitePiecesBB;
-        savedBlackBB = _blackPiecesBB;
-        savedAllBB = _allPiecesBB;
-        savedMovingPieceBB = _bitboards[(int)movingPiece];
-        savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
+        ulong savedWhiteBB = _whitePiecesBB;
+        ulong savedBlackBB = _blackPiecesBB;
+        ulong savedAllBB = _allPiecesBB;
+        ulong savedMovingPieceBB = _bitboards[(int)movingPiece];
+        ulong savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
 
 
         //capture 
