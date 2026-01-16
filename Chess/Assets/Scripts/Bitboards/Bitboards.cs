@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -108,7 +109,7 @@ public class Bitboards
     {'q', (int)Piece.BlackQueen},  {'k', (int)Piece.BlackKing}
     };
 
-    private List<Move> _currentLegalMoves = new List<Move>();
+    private CustomMovesList _currentLegalMoves = new CustomMovesList();
 
     private void ResetGame()
     {
@@ -125,9 +126,9 @@ public class Bitboards
 
     }
 
-    public List<Move> GetCurrentLegalMoves()
+    public Move[] GetCurrentLegalMoves()
     {
-        return _currentLegalMoves;
+        return _currentLegalMoves.Moves;
     }
 
     public void SetTurn(bool isWhite)
@@ -191,7 +192,7 @@ public class Bitboards
         Move validMove = default;
         bool isValid = false;
 
-        foreach (Move move in _currentLegalMoves)
+        foreach (Move move in _currentLegalMoves.Moves)
         {
             if (move.StartingPos == from && move.EndingPos== to)
             {
@@ -268,7 +269,6 @@ public class Bitboards
 
         //have to generate legal moves after turn switch immediately
         GenerateLegalMoves();
-
         GameState state = CheckGameState();
         if (state != GameState.Playing)
         {
@@ -294,7 +294,7 @@ public class Bitboards
     {
         ulong moves = 0UL;
 
-        foreach (Move move in _currentLegalMoves)
+        foreach (Move move in _currentLegalMoves.Moves)
         {
             if (move.StartingPos == from)
             {
@@ -373,7 +373,7 @@ public class Bitboards
     {
         _currentLegalMoves.Clear();
 
-        List<Move> pseudoMoves = new List<Move>();
+        CustomMovesList pseudoMoves = new CustomMovesList();
 
         //get correct bitboards based on turn
         ulong pawns = _bitboards[_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
@@ -392,8 +392,7 @@ public class Bitboards
             pseudoMoves
         );
 
-        //filter out illegal moves that leave king in check
-        foreach (var move in pseudoMoves)
+        foreach (var move in pseudoMoves.Moves)
         {
             if (MakeMoveAndCheckLegality(move))
             {
@@ -460,7 +459,7 @@ public class Bitboards
     }
     public GameState CheckGameState()
     {
-        if (_currentLegalMoves.Count > 0)
+        if (_currentLegalMoves.Length > 0)
         {
             return GameState.Playing;
         }

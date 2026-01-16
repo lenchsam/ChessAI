@@ -184,7 +184,7 @@ public static class MoveGenerator
         ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn, 
-        List<Move> moveList)
+        CustomMovesList moveList)
     {
         //non sliding pieces
         GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
@@ -198,11 +198,11 @@ public static class MoveGenerator
         GenerateSlidingMoves(queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
     }
 
-    public static List<Move> GetMovesFromSquare(int square, Piece pieceType, 
+    public static CustomMovesList GetMovesFromSquare(int square, Piece pieceType, 
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn)
     {
-        List<Move> moves = new List<Move>();
+        CustomMovesList moves = new CustomMovesList();
 
         ulong mask = 1UL << square;
 
@@ -549,7 +549,7 @@ public static class MoveGenerator
             BlackPawnLookup[squareIndex] = blackAttacks;
         }
     }
-    private static void GenerateSlidingMoves(ulong pieces, Piece pieceType, ulong allPieces, ulong ownPieces, ulong enemyPieces, List<Move> moveList)
+    private static void GenerateSlidingMoves(ulong pieces, Piece pieceType, ulong allPieces, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
     {
         while (pieces != 0)
         {
@@ -574,7 +574,7 @@ public static class MoveGenerator
     }
 
     //pseudo legal knight moves
-    private static void GenerateKnightMoves(ulong knights, ulong ownPieces, ulong enemyPieces, List<Move> moveList)
+    private static void GenerateKnightMoves(ulong knights, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
     {
         while (knights != 0)
         {
@@ -601,7 +601,7 @@ public static class MoveGenerator
 
     //pseudo legal king moves 
     //TODO: add castling
-    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, List<Move> moveList)
+    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
     {
         while (kings != 0)
         {
@@ -628,7 +628,7 @@ public static class MoveGenerator
 
     //pseudo legal pawn moves
     //TODO: add en passant and promotions
-    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, List<Move> moveList)
+    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList)
     {
         ulong emptySquares = ~allPieces;
 
@@ -695,7 +695,7 @@ public static class MoveGenerator
         }
     }
 
-    private static void AddPromotionMoves(ulong promotionPawns, int offset, bool isCapture, List<Move> movesList)
+    private static void AddPromotionMoves(ulong promotionPawns, int offset, bool isCapture, CustomMovesList movesList)
     {
         while (promotionPawns != 0)
         {
@@ -719,7 +719,7 @@ public static class MoveGenerator
             }
         }
     }
-    private static void GetMovesFromBitboard(ulong bitboard, int offset, int flag, List<Move> moveList)
+    private static void GetMovesFromBitboard(ulong bitboard, int offset, int flag, CustomMovesList moveList)
     {
         while (bitboard != 0)
         {
