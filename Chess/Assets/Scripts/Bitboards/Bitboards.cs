@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.WSA;
 using static BitboardHelpers;
 using static MoveGenerator;
 
@@ -85,6 +84,7 @@ public enum GameState
     Checkmate,
     Stalemate
 }
+[System.Serializable]
 public class Bitboards
 {
     public UnityEvent<ulong> MovingPieceEvent = new UnityEvent<ulong>();
@@ -392,8 +392,10 @@ public class Bitboards
             pseudoMoves
         );
 
-        foreach (var move in pseudoMoves.Moves)
+        for (int i = 0; i < pseudoMoves.Length; i++)
         {
+            Move move = pseudoMoves.Moves[i];
+
             if (MakeMoveAndCheckLegality(move))
             {
                 moves.Add(move);
@@ -463,36 +465,6 @@ public class Bitboards
         //return if king is safe
         return !isKingAttacked;
     }
-
-    public void MakeMove(Move move)
-    {
-        ulong fromBit = 1UL << move.StartingPos;
-        ulong toBit = 1UL << move.EndingPos;
-
-        if (_boardSquares[move.EndingPos] != Piece.None)
-        {
-            _bitboards[(int)_boardSquares[move.EndingPos]] &= ~toBit;
-        }
-
-        //make move
-        _bitboards[(int)_boardSquares[move.StartingPos]] ^= (fromBit | toBit);
-        _boardSquares[move.EndingPos] = _boardSquares[move.StartingPos];
-        _boardSquares[move.StartingPos] = Piece.None;
-
-        UpdateTotalBitboards();
-    }
-    public void UndoMove(Move move)
-    {
-        _bitboards[(int)_boardSquares[move.StartingPos]] = savedMovingPieceBB;
-        if (_boardSquares[move.EndingPos] != Piece.None) _bitboards[(int)_boardSquares[move.EndingPos]] = savedCapturedPieceBB;
-
-        _whitePiecesBB = savedWhiteBB;
-        _blackPiecesBB = savedBlackBB;
-        _allPiecesBB = savedAllBB;
-
-        _boardSquares[move.StartingPos] = _boardSquares[move.StartingPos];
-        _boardSquares[move.EndingPos] = _boardSquares[move.EndingPos];
-    }
     public GameState CheckGameState()
     {
         if (_currentLegalMoves.Length > 0)
@@ -522,6 +494,121 @@ public class Bitboards
         {
             return GameState.Stalemate;
         }
+    }
+    #endregion
+    #region perf test methods
+    public void MakeMove(Move move)
+    {
+        ulong fromBit = 1UL << move.StartingPos;
+        ulong toBit = 1UL << move.EndingPos;
+
+        //which piece is moving
+        Piece movingPiece = _boardSquares[move.StartingPos];
+
+        Piece capturedPiece = _boardSquares[move.EndingPos];
+
+        //is capture then remove captured piece
+        if (capturedPiece != Piece.None)
+        {
+            _bitboards[(int)capturedPiece] &= ~toBit;
+        }
+        //handle en passant (no move will be en passant yet as move generator doesnt generate en passnant moves yet)
+        else if (move.Flag == MoveFlag.EnPassantCapture)
+        {
+            //en passant capture is behind the ending pos
+            int capturePos = _isWhiteTurn ? (move.EndingPos - 8) : (move.EndingPos + 8);
+            Piece epPawn = _isWhiteTurn ? Piece.BlackPawn : Piece.WhitePawn;
+
+            _bitboards[(int)epPawn] &= ~(1UL << capturePos);
+            _boardSquares[capturePos] = Piece.None;
+        }
+
+        //handle promotion
+        if (move.IsPromotion)
+        {
+            //remove pawn from pawn bitboard
+            _bitboards[(int)movingPiece] &= ~fromBit;
+            _boardSquares[move.StartingPos] = Piece.None;
+
+            //which piece to promote to
+            Piece promotedPiece = move.PromotionPieceType;
+            //black enum adjustment
+            if (!_isWhiteTurn) promotedPiece = (Piece)((int)promotedPiece + 6);
+
+            //add promoted piece to its bitboard
+            _bitboards[(int)promotedPiece] |= toBit;
+            _boardSquares[move.EndingPos] = promotedPiece;
+        }
+        else
+        {
+            //move piece
+            _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+
+            _boardSquares[move.EndingPos] = movingPiece;
+            _boardSquares[move.StartingPos] = Piece.None;
+        }
+
+        UpdateTotalBitboards();
+        _isWhiteTurn = !_isWhiteTurn;
+    }
+
+    public void UndoMove(Move move, Piece capturedPiece)
+    {
+        _isWhiteTurn = !_isWhiteTurn;
+
+        ulong fromBit = 1UL << move.StartingPos;
+        ulong toBit = 1UL << move.EndingPos;
+
+        //handle promotion differently as we have to remove the promoted piece and add back the pawn
+        if (move.IsPromotion)
+        {
+            //remove promoted piece
+            Piece promotedPiece = _boardSquares[move.EndingPos];
+            if (promotedPiece != Piece.None)
+                _bitboards[(int)promotedPiece] &= ~toBit;
+
+            //place pawn back
+            Piece pawn = _isWhiteTurn ? Piece.WhitePawn : Piece.BlackPawn;
+            _bitboards[(int)pawn] |= fromBit;
+            _boardSquares[move.StartingPos] = pawn;
+        }
+        else
+        {
+            //undo move
+            Piece movingPiece = _boardSquares[move.EndingPos];
+
+            if (movingPiece != Piece.None)
+            {
+                _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+                _boardSquares[move.StartingPos] = movingPiece;
+            }
+        }
+
+        //put back captured piece
+        //just moving back origional piece isnt enough as captured piece still needs to be put back
+
+        //en passant not done in move generator yet so no moves currently have this flag
+        if (move.Flag == MoveFlag.EnPassantCapture)
+        {
+            _boardSquares[move.EndingPos] = Piece.None;
+
+            int capturePos = _isWhiteTurn ? (move.EndingPos - 8) : (move.EndingPos + 8);
+            Piece epPawn = _isWhiteTurn ? Piece.BlackPawn : Piece.WhitePawn;
+
+            _bitboards[(int)epPawn] |= (1UL << capturePos);
+            _boardSquares[capturePos] = epPawn;
+        }
+        else if (capturedPiece != Piece.None)
+        {
+            _bitboards[(int)capturedPiece] |= toBit;
+            _boardSquares[move.EndingPos] = capturedPiece;
+        }
+        else
+        {
+            _boardSquares[move.EndingPos] = Piece.None;
+        }
+
+        UpdateTotalBitboards();
     }
     #endregion
 }

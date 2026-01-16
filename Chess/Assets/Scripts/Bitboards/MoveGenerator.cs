@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+[System.Serializable]
 public static class MoveGenerator
 {
     //non sliding pieces lookup tables

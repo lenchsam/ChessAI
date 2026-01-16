@@ -1,37 +1,64 @@
+using System.Diagnostics;
 using UnityEngine;
 
 public class PerftTest : MonoBehaviour
 {
     [SerializeField] GameManager _gameManager;
     [Range(1, 6)]
-    [SerializeField] int depth;
+    [SerializeField] int _depth = 3;
+
+    private CustomMovesList[] _moveLists;
+    void Awake()
+    {
+        _moveLists = new CustomMovesList[10];
+        for (int i = 0; i < _moveLists.Length; i++)
+        {
+            _moveLists[i] = new CustomMovesList();
+        }
+    }
+
     [ContextMenu("Run Perft")]
     void RunPerft()
     {
-        ulong num = Perft();
-        Debug.Log(num);
+        //ensures a fare test
+        System.GC.Collect(); 
+
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
+        ulong totalNodes = Perft(_depth);
+
+        sw.Stop();
+
+        ulong nps = totalNodes / (ulong)(sw.ElapsedMilliseconds / 1000);
+
+        UnityEngine.Debug.Log($"Perft({_depth}) Nodes: {totalNodes} | Time: {sw.ElapsedMilliseconds}ms | NPS: {nps:N0}");
     }
-    ulong Perft()
+
+    ulong Perft(int currentDepth)
     {
-        CustomMovesList movesList = new CustomMovesList();
-        int moves, i;
+        if (currentDepth == 0) return 1UL;
+
         ulong nodes = 0;
 
-        if (depth == 0)
+        CustomMovesList movesList = _moveLists[currentDepth];
+        movesList.Clear();
+
+        _gameManager.BitboardScript.GenerateLegalMoves(movesList);
+
+        //go through every legal move
+        for (int i = 0; i < movesList.Length; i++)
         {
-            return 1UL;
+            Move move = movesList.Moves[i];
+
+            //needed so we can undo captures correctly
+            Piece capturedPiece = _gameManager.BitboardScript.GetPieceOnSquare(move.EndingPos);
+
+            _gameManager.BitboardScript.MakeMove(move);
+            nodes += Perft(currentDepth - 1);
+            _gameManager.BitboardScript.UndoMove(move, capturedPiece);
         }
 
-        moves = _gameManager.BitboardScript.GenerateLegalMoves(movesList);
-
-        //generate legal moves
-
-        for(i = 0; i < moves; i++){
-            _gameManager.BitboardScript.MakeMove(movesList.Moves[i]);
-            depth--;
-            nodes += Perft();
-            _gameManager.BitboardScript.UndoMove(movesList.Moves[i]);
-        }
         return nodes;
     }
 }
