@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using static BitboardHelpers;
@@ -78,6 +79,19 @@ public enum PawnPromotion : byte
     PromoteBishop = 4,  //0100
     PromoteKnight = 8,  //1000
 }
+public enum Castling : byte
+{
+    BlackKing = 1,  //0001
+    BlackQueen = 2, //0010
+    WhiteKing = 4,  //0100
+    WhiteQueen = 8, //1000
+
+    AllWhite = WhiteKing | WhiteQueen,  //1100
+    AllBlack = BlackKing | BlackQueen, //0011
+
+    All = AllWhite | AllBlack,  //1111
+    None = 0
+}
 public enum GameState
 {
     Playing,
@@ -111,6 +125,8 @@ public class Bitboards
     };
 
     private CustomMovesList _currentLegalMoves = new CustomMovesList();
+
+    Castling CastlingRights = Castling.All;
 
     private void ResetGame()
     {
@@ -234,6 +250,8 @@ public class Bitboards
         Piece movingPiece = _boardSquares[from];
         Piece targetPiece = _boardSquares[to];
 
+        CheckCastlingRights(movingPiece, from);
+
         //captures
         if (validMove.IsCapture)
         {
@@ -291,6 +309,32 @@ public class Bitboards
         }
     }
 
+    private void CheckCastlingRights(Piece movingPiece, int fromIndex)
+    {
+
+        switch (movingPiece) 
+        {
+            case Piece.BlackKing:
+                //sets black castling rights to 0
+                CastlingRights ^= Castling.AllBlack;
+                Debug.Log(CastlingRights);
+                break;
+            case Piece.WhiteKing:
+                //sets white castling rights to 0
+                CastlingRights ^= Castling.AllWhite;
+                Debug.Log(CastlingRights);
+                break;
+            case Piece.WhiteRook:
+                //if left side 
+                //if right side
+                break;
+            case Piece.BlackRook:
+                //if left side 
+                //if right side
+                break;
+
+        }
+    }
     public void InvokeEvent(int from)
     {
         ulong moves = 0UL;
