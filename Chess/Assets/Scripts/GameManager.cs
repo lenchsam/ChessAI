@@ -68,7 +68,9 @@ public class GameManager : MonoBehaviour
 
     public void FinalizeMove(int from, int to, PawnPromotion promotionType)
     {
-        bool wasMoveMade = BitboardScript.MovePiece(from, to, promotionType);
+        int moveFlag;
+
+        bool wasMoveMade = BitboardScript.MovePiece(from, to, out moveFlag, promotionType);
 
         if (wasMoveMade)
         {
@@ -81,7 +83,8 @@ public class GameManager : MonoBehaviour
                 visualPiece = GetPieceFromPromotion(promotionType, isWhite);
             }
 
-            _board.MovePieceVisual(from, to, visualPiece);
+            _board.MovePieceVisual(from, to, visualPiece, moveFlag);
+
             _playerController.ToggleIsWhite();
         }
         else

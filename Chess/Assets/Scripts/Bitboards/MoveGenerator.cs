@@ -185,11 +185,12 @@ public static class MoveGenerator
         ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn, 
+        Castling castlingRights,
         CustomMovesList moveList)
     {
         //non sliding pieces
         GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
-        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList);
+        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList, castlingRights, allPieces);
         GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList);
 
         //sliding pieces
@@ -201,7 +202,7 @@ public static class MoveGenerator
 
     public static CustomMovesList GetMovesFromSquare(int square, Piece pieceType, 
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
-        bool isWhiteTurn)
+        bool isWhiteTurn, Castling castlingRights)
     {
         CustomMovesList moves = new CustomMovesList();
 
@@ -232,7 +233,7 @@ public static class MoveGenerator
 
             case Piece.WhiteKing:
             case Piece.BlackKing:
-                GenerateKingMoves(mask, ownPieces, enemyPieces, moves);
+                GenerateKingMoves(mask, ownPieces, enemyPieces, moves, castlingRights, allPieces);
                 break;
 
             case Piece.WhitePawn:
@@ -602,7 +603,7 @@ public static class MoveGenerator
 
     //pseudo legal king moves 
     //TODO: add castling
-    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
+    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, Castling castlingRights, ulong allPieces)
     {
         while (kings != 0)
         {
@@ -623,7 +624,65 @@ public static class MoveGenerator
                 moveList.Add(new Move(fromSquare, toSquare, flag));
             }
 
-            //castling
+            GenerateCastlingMoves(fromSquare, moveList, castlingRights, allPieces);
+        }
+    }
+
+    private static void GenerateCastlingMoves(int kingSquare, CustomMovesList moveList, Castling castlingRights, ulong allPieces)
+    {
+        bool isWhite = kingSquare == 4;
+        bool isBlack = kingSquare == 60;
+
+        if (!isWhite && !isBlack) return;
+
+        //white
+        if (isWhite)
+        {
+            //king side
+            if ((castlingRights & Castling.WhiteKing) != 0)
+            {
+                if (((allPieces >> 5) & 1) == 0 &&
+                    ((allPieces >> 6) & 1) == 0)
+                {
+                    moveList.Add(new Move(4, 6, MoveFlag.CastleKingSide));
+                }
+            }
+
+            //queen side
+            if ((castlingRights & Castling.WhiteQueen) != 0)
+            {
+                if (((allPieces >> 1) & 1) == 0 &&
+                    ((allPieces >> 2) & 1) == 0 &&
+                    ((allPieces >> 3) & 1) == 0)
+                {
+                    moveList.Add(new Move(4, 2, MoveFlag.CastleQueenSide));
+                }
+            }
+        }
+
+        //black
+        if (isBlack)
+        {
+            //king side
+            if ((castlingRights & Castling.BlackKing) != 0)
+            {
+                if (((allPieces >> 61) & 1) == 0 &&
+                    ((allPieces >> 62) & 1) == 0)
+                {
+                    moveList.Add(new Move(60, 62, MoveFlag.CastleKingSide));
+                }
+            }
+
+            //queen side
+            if ((castlingRights & Castling.BlackQueen) != 0)
+            {
+                if (((allPieces >> 57) & 1) == 0 &&
+                    ((allPieces >> 58) & 1) == 0 &&
+                    ((allPieces >> 59) & 1) == 0)
+                {
+                    moveList.Add(new Move(60, 58, MoveFlag.CastleQueenSide));
+                }
+            }
         }
     }
 

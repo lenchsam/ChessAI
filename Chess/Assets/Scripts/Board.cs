@@ -112,44 +112,60 @@ public class Board : MonoBehaviour
         return _pieceObjects[pos];
     }
 
-    public void MovePieceVisual(int oldSquare, int newSquare, Piece promotedPiece = Piece.None)
+    public void MovePieceVisual(int oldSquare, int newSquare, Piece promotionPiece, int moveFlag)
+    {
+        // Move king
+        MoveSinglePiece(oldSquare, newSquare);
+
+        //promotion
+        if (promotionPiece != Piece.None)
+        {
+            GameObject pawnObject = _pieceObjects[newSquare];
+
+            //save position
+            Vector3 pos = pawnObject.transform.position;
+
+            Destroy(pawnObject);
+            _pieceObjects[newSquare] = null;
+
+            //instantiate new piece
+            GameObject newPiecePrefab = GetPiecePrefab(promotionPiece);
+            GameObject instance = Instantiate(newPiecePrefab, pos, Quaternion.identity, _piecesParent.transform);
+            _pieceObjects[newSquare] = instance;
+        }
+
+        //castling
+        if (moveFlag == MoveFlag.CastleKingSide)
+        {
+            if (oldSquare == 4)         //white
+                MoveSinglePiece(7, 5);
+            else if (oldSquare == 60)   //black
+                MoveSinglePiece(63, 61);
+        }
+        else if (moveFlag == MoveFlag.CastleQueenSide)
+        {
+            if (oldSquare == 4)         //white
+                MoveSinglePiece(0, 3);
+            else if (oldSquare == 60)   //black
+                MoveSinglePiece(56, 59);
+        }
+    }
+
+    private void MoveSinglePiece(int oldSquare, int newSquare)
     {
         GameObject pieceToMove = _pieceObjects[oldSquare];
-
-        int oldX = oldSquare % 8;
-        int oldY = oldSquare / 8;
+        if (pieceToMove == null) return;
 
         int newX = newSquare % 8;
         int newY = newSquare / 8;
-        //if they didnt move the piece
-        if (oldSquare == newSquare)
-        {
-            pieceToMove.transform.position = new Vector3(oldX, oldY, -1);
-            return;
-        }
+
+        if (_pieceObjects[newSquare] != null)
+            Destroy(_pieceObjects[newSquare]);
 
         pieceToMove.transform.position = new Vector3(newX, newY, -1);
 
-        if (_pieceObjects[newSquare] != null)
-        {
-            Destroy(_pieceObjects[newSquare]);
-        }
-
-        _pieceObjects[newSquare] = _pieceObjects[oldSquare];
+        _pieceObjects[newSquare] = pieceToMove;
         _pieceObjects[oldSquare] = null;
-
-        if (promotedPiece != Piece.None)
-        {
-            //destroy old pawn, replace with new piece
-            Destroy(_pieceObjects[newSquare]);
-
-            Vector2 position = new Vector2(newX, newY);
-            GameObject newPiecePrefab = GetPiecePrefab(promotedPiece);
-
-            GameObject newInstance = Instantiate(newPiecePrefab, new Vector3(newX, newY, -1), Quaternion.identity, _piecesParent.transform);
-
-            _pieceObjects[newSquare] = newInstance;
-        }
     }
 
 

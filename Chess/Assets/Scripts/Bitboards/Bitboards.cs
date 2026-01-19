@@ -203,8 +203,10 @@ public class Bitboards
         return _boardSquares[squareIndex];
     }
 
-    public bool MovePiece(int from, int to, PawnPromotion chosenPromotion = PawnPromotion.None)
+    public bool MovePiece(int from, int to, out int movedFlag, PawnPromotion chosenPromotion = PawnPromotion.None)
     {
+        movedFlag = MoveFlag.None;
+
         //is move valid
         Move validMove = default;
         bool isValid = false;
@@ -218,7 +220,6 @@ public class Bitboards
                     //if its a promotion, check the chosen promotion type
                     Piece targetPieceType = GetPieceFromPromotionEnum(chosenPromotion);
 
-                    // Compare the move's promotion type (e.g. WhiteQueen) with the user's choice
                     if (move.PromotionPieceType == Piece.WhiteQueen && targetPieceType == Piece.WhiteQueen) isValid = true;
                     else if (move.PromotionPieceType == Piece.WhiteRook && targetPieceType == Piece.WhiteRook) isValid = true;
                     else if (move.PromotionPieceType == Piece.WhiteBishop && targetPieceType == Piece.WhiteBishop) isValid = true;
@@ -227,6 +228,7 @@ public class Bitboards
                     if (isValid)
                     {
                         validMove = move;
+                        movedFlag = validMove.Flag;
                         break;
                     }
                 }
@@ -235,6 +237,7 @@ public class Bitboards
                     //normal move
                     validMove = move;
                     isValid = true;
+                    movedFlag = validMove.Flag;
                     break;
                 }
             }
@@ -282,6 +285,30 @@ public class Bitboards
             _boardSquares[to] = promotedPieceType;
         }
 
+        if (validMove.Flag == MoveFlag.CastleKingSide)
+        {
+            if (_isWhiteTurn)
+            {
+                MoveRook(7, 5); // h1 -> f1
+            }
+            else
+            {
+                MoveRook(63, 61); // h8 -> f8
+            }
+        }
+
+        if (validMove.Flag == MoveFlag.CastleQueenSide)
+        {
+            if (_isWhiteTurn)
+            {
+                MoveRook(0, 3); // a1 -> d1
+            }
+            else
+            {
+                MoveRook(56, 59); // a8 -> d8
+            }
+        }
+
         UpdateTotalBitboards();
 
         _isWhiteTurn = !_isWhiteTurn;
@@ -295,6 +322,18 @@ public class Bitboards
         }
 
         return true;
+    }
+
+    private void MoveRook(int from, int to)
+    {
+        ulong fromBit = 1UL << from;
+        ulong toBit = 1UL << to;
+
+        Piece rook = _boardSquares[from];
+
+        _bitboards[(int)rook] ^= (fromBit | toBit);
+        _boardSquares[from] = Piece.None;
+        _boardSquares[to] = rook;
     }
 
     private Piece GetPieceFromPromotionEnum(PawnPromotion promo)
@@ -311,28 +350,25 @@ public class Bitboards
 
     private void CheckCastlingRights(Piece movingPiece, int fromIndex)
     {
-
-        switch (movingPiece) 
+        switch (movingPiece)
         {
-            case Piece.BlackKing:
-                //sets black castling rights to 0
-                CastlingRights ^= Castling.AllBlack;
-                Debug.Log(CastlingRights);
-                break;
             case Piece.WhiteKing:
-                //sets white castling rights to 0
-                CastlingRights ^= Castling.AllWhite;
-                Debug.Log(CastlingRights);
-                break;
-            case Piece.WhiteRook:
-                //if left side 
-                //if right side
-                break;
-            case Piece.BlackRook:
-                //if left side 
-                //if right side
+                CastlingRights &= ~Castling.AllWhite;
                 break;
 
+            case Piece.BlackKing:
+                CastlingRights &= ~Castling.AllBlack;
+                break;
+
+            case Piece.WhiteRook:
+                if (fromIndex == 0) CastlingRights &= ~Castling.WhiteQueen; //a1
+                if (fromIndex == 7) CastlingRights &= ~Castling.WhiteKing;  //h1
+                break;
+
+            case Piece.BlackRook:
+                if (fromIndex == 56) CastlingRights &= ~Castling.BlackQueen; //a8
+                if (fromIndex == 63) CastlingRights &= ~Castling.BlackKing;  //h8
+                break;
         }
     }
     public void InvokeEvent(int from)
@@ -434,6 +470,7 @@ public class Bitboards
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
             _isWhiteTurn,
+            CastlingRights,
             pseudoMoves
         );
 
