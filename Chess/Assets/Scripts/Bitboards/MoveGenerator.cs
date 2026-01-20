@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [System.Serializable]
 public static class MoveGenerator
@@ -186,6 +187,7 @@ public static class MoveGenerator
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn, 
         Castling castlingRights,
+        
         CustomMovesList moveList)
     {
         //non sliding pieces
@@ -726,6 +728,27 @@ public static class MoveGenerator
 
             AddPromotionMoves(captureLeft & rank8Mask, 7, true, moveList);  //promotion from capture
             AddPromotionMoves(captureRight & rank8Mask, 9, true, moveList); //promotion from capture
+
+            //en passant moves
+            //rank 5 mask
+            //if a pawn isnt on rank5, it's impossible for it to en passant
+            ulong rank5Mask = 0x000000FF00000000UL;
+            ulong potentialEnPassant = ((pawns & rank5Mask));
+            //get least significant bit
+            //divide by 8, remainder will be the file.
+            while(potentialEnPassant != 0)
+            {
+                int index = BitboardHelpers.PopLeastSignificantBit(ref potentialEnPassant);
+                int file = index % 8;
+
+                //enpassantflag index
+
+                ushort enPassantFlag = 0b00000000_00000100;
+
+                int ind = BitboardHelpers.PopLeastSignificantBit(ref enPassantFlag);
+                Debug.Log(ind);
+                //if potentialenpassant index is 1 either side of the flag then can en passant.
+            }
         }
         else
         {

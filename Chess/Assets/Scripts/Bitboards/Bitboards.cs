@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using static BitboardHelpers;
@@ -296,7 +295,6 @@ public class Bitboards
                 MoveRook(63, 61); // h8 -> f8
             }
         }
-
         if (validMove.Flag == MoveFlag.CastleQueenSide)
         {
             if (_isWhiteTurn)
@@ -323,7 +321,6 @@ public class Bitboards
 
         return true;
     }
-
     private void MoveRook(int from, int to)
     {
         ulong fromBit = 1UL << from;
@@ -435,8 +432,6 @@ public class Bitboards
         int toRank = to / 8;
         return toRank == 0 || toRank == 7;
     }
-
-    #region Ending Conditions
 
     private int GetKingSquare(bool isWhite)
     {
@@ -572,7 +567,6 @@ public class Bitboards
             return GameState.Stalemate;
         }
     }
-    #endregion
     #region perf test methods
     public void MakeMove(Move move)
     {
