@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -186,14 +187,14 @@ public static class MoveGenerator
         ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn, 
+        ushort enPassantMask,
         Castling castlingRights,
-        
         CustomMovesList moveList)
     {
         //non sliding pieces
         GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
         GenerateKingMoves(kings, ownPieces, enemyPieces, moveList, castlingRights, allPieces);
-        GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList);
+        GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList, enPassantMask);
 
         //sliding pieces
         //doesnt matter if white or black piece type as attacks are the same
@@ -240,7 +241,7 @@ public static class MoveGenerator
 
             case Piece.WhitePawn:
             case Piece.BlackPawn:
-                GeneratePawnMoves(mask, allPieces, enemyPieces, isWhiteTurn, moves);
+                //GeneratePawnMoves(mask, allPieces, enemyPieces, isWhiteTurn, moves);
                 break;
         }
 
@@ -690,7 +691,7 @@ public static class MoveGenerator
 
     //pseudo legal pawn moves
     //TODO: add en passant and promotions
-    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList)
+    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList, ushort enPassantFlag)
     {
         ulong emptySquares = ~allPieces;
 
@@ -734,20 +735,25 @@ public static class MoveGenerator
             //if a pawn isnt on rank5, it's impossible for it to en passant
             ulong rank5Mask = 0x000000FF00000000UL;
             ulong potentialEnPassant = ((pawns & rank5Mask));
-            //get least significant bit
-            //divide by 8, remainder will be the file.
+
             while(potentialEnPassant != 0)
             {
+                //get file of taking piece
                 int index = BitboardHelpers.PopLeastSignificantBit(ref potentialEnPassant);
                 int file = index % 8;
 
-                //enpassantflag index
+                enPassantFlag = 0b00000000_01000000;
 
-                ushort enPassantFlag = 0b00000000_00000100;
+                //get file of en passant piece
+                int enPassantFile = BitboardHelpers.PopLeastSignificantBit(ref enPassantFlag);
 
-                int ind = BitboardHelpers.PopLeastSignificantBit(ref enPassantFlag);
-                Debug.Log(ind);
-                //if potentialenpassant index is 1 either side of the flag then can en passant.
+
+                //if taking pawn is next to en passant pawn
+                if (file - 1 == enPassantFile || file + 1 == enPassantFile)
+                {
+                    Debug.Log("en passant possible");
+                    moveList.Add(new Move(index, enPassantFile * 8, MoveFlag.EnPassantCapture));
+                }
             }
         }
         else
@@ -813,6 +819,12 @@ public static class MoveGenerator
             int fromIndex = toIndex - offset;
 
             moveList.Add(new Move(fromIndex, toIndex, flag));
+
+            //if doublepush
+            if(offset == 16)
+            {
+                //get file of the push, add this file into the en passant flag
+            }
         }
     }
     #endregion

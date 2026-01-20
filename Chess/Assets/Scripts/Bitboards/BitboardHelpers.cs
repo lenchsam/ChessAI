@@ -16,11 +16,12 @@ public static class BitboardHelpers
 
     private static readonly int[] DeBruijnIndex16 =
     {
-        0, 1, 2, 5, 3, 9, 6, 11, 15, 4, 8, 10, 14, 7, 13, 12
+        0,  1,  2,  5,  3,  9,  6, 11,
+        15,  4,  8, 10, 14,  7, 13, 12
     };
 
     private const ulong DeBruijn64 = 0x03f79d71b4cb0a89UL;
-    private const ulong DeBruijn16 = 0x09AF;
+    private const ushort DeBruijn16 = 0x09AF;
 
     private static int BitScanForward(ulong bb)
     {
@@ -28,7 +29,8 @@ public static class BitboardHelpers
     }
     private static int BitScanForward(ushort bb)
     {
-        return DeBruijnIndex16[((ushort)(bb & (~bb + 1)) * DeBruijn16) >> 12];
+        ushort lsb = (ushort)(bb & (ushort)(-(short)bb));
+        return DeBruijnIndex16[((lsb * DeBruijn16) >> 12) & 0xF];
     }
     public static int PopLeastSignificantBit(ref ulong bb)
     {

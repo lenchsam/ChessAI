@@ -127,6 +127,8 @@ public class Bitboards
 
     Castling CastlingRights = Castling.All;
 
+    ushort _enPassantMask = 0;
+
     private void ResetGame()
     {
         _isWhiteTurn = true;
@@ -465,6 +467,7 @@ public class Bitboards
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
             _isWhiteTurn,
+            _enPassantMask,
             CastlingRights,
             pseudoMoves
         );
