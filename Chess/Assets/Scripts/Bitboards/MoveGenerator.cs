@@ -605,7 +605,6 @@ public static class MoveGenerator
     }
 
     //pseudo legal king moves 
-    //TODO: add castling
     private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, Castling castlingRights, ulong allPieces)
     {
         while (kings != 0)
@@ -690,7 +689,6 @@ public static class MoveGenerator
     }
 
     //pseudo legal pawn moves
-    //TODO: add en passant and promotions
     private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList, ushort enPassantFlag)
     {
         ulong emptySquares = ~allPieces;
@@ -731,28 +729,31 @@ public static class MoveGenerator
             AddPromotionMoves(captureRight & rank8Mask, 9, true, moveList); //promotion from capture
 
             //en passant moves
-            //rank 5 mask
-            //if a pawn isnt on rank5, it's impossible for it to en passant
-            ulong rank5Mask = 0x000000FF00000000UL;
-            ulong potentialEnPassant = ((pawns & rank5Mask));
-
-            while(potentialEnPassant != 0)
+            if (enPassantFlag != 0)
             {
-                //get file of taking piece
-                int index = BitboardHelpers.PopLeastSignificantBit(ref potentialEnPassant);
-                int file = index % 8;
+                //get file from mask
+                ulong maskCopy = enPassantFlag;
+                int enPassantFile = BitboardHelpers.PopLeastSignificantBit(ref maskCopy);
 
-                enPassantFlag = 0b00000000_01000000;
+                //white captures on rank 6 which is index 5
+                //* 8 + file gives square index
+                int epTargetSquare = (5 * 8) + enPassantFile;
 
-                //get file of en passant piece
-                int enPassantFile = BitboardHelpers.PopLeastSignificantBit(ref enPassantFlag);
+                //rank 5 mask
+                //if a pawn isnt on rank5, it's impossible for it to en passant
+                ulong rank5Mask = 0x000000FF00000000UL;
+                ulong rank5Pawns = pawns & rank5Mask;
 
-
-                //if taking pawn is next to en passant pawn
-                if (file - 1 == enPassantFile || file + 1 == enPassantFile)
+                while (rank5Pawns != 0)
                 {
-                    Debug.Log("en passant possible");
-                    moveList.Add(new Move(index, enPassantFile * 8, MoveFlag.EnPassantCapture));
+                    int fromSquare = BitboardHelpers.PopLeastSignificantBit(ref rank5Pawns);
+                    int fromFile = fromSquare % 8;
+
+                    //check if pawn is adjacent to en passant file
+                    if (Math.Abs(fromFile - enPassantFile) == 1)
+                    {
+                        moveList.Add(new Move(fromSquare, epTargetSquare, MoveFlag.EnPassantCapture));
+                    }
                 }
             }
         }
@@ -770,7 +771,7 @@ public static class MoveGenerator
             AddPromotionMoves(promotionPush, -8, false, moveList);
 
             //cannot promote from double push so no need to account for it here
-            GetMovesFromBitboard(doublePush, -16, MoveFlag.None, moveList); //double push
+            GetMovesFromBitboard(doublePush, -16, MoveFlag.PawnDoublePush, moveList); //double push
 
             //right for black is left for the white POV
             ulong captureRight = ((pawns & notHFile) >> 7) & enemyPieces;
@@ -781,6 +782,33 @@ public static class MoveGenerator
 
             AddPromotionMoves(captureLeft & rank1Mask, -9, true, moveList);  //promotion from capture
             AddPromotionMoves(captureRight & rank1Mask, -7, true, moveList); //promotion from capture
+
+            if (enPassantFlag != 0)
+            {
+                ulong maskCopy = enPassantFlag;
+                int enPassantFile = BitboardHelpers.PopLeastSignificantBit(ref maskCopy);
+
+                //black captures on rank 3 which is index 2
+                //* 8 + file gives square index
+                int epTargetSquare = (2 * 8) + enPassantFile;
+
+                //rank 4 mask
+                //if a pawn isnt on rank4, it's impossible for it to en passant
+                ulong rank4Mask = 0x00000000FF000000UL;
+                ulong rank4Pawns = pawns & rank4Mask;
+
+                while (rank4Pawns != 0)
+                {
+                    int fromSquare = BitboardHelpers.PopLeastSignificantBit(ref rank4Pawns);
+                    int fromFile = fromSquare % 8;
+
+                    //check if pawn is adjacent to en passant file
+                    if (Math.Abs(fromFile - enPassantFile) == 1)
+                    {
+                        moveList.Add(new Move(fromSquare, epTargetSquare, MoveFlag.EnPassantCapture));
+                    }
+                }
+            }
         }
     }
 

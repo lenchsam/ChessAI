@@ -212,6 +212,7 @@ public class Bitboards
         Move validMove = default;
         bool isValid = false;
 
+        //is move legal
         foreach (Move move in _currentLegalMoves.Moves)
         {
             if (move.StartingPos == from && move.EndingPos== to)
@@ -257,35 +258,24 @@ public class Bitboards
         CheckCastlingRights(movingPiece, from);
 
         //captures
-        if (validMove.IsCapture)
+        if (validMove.Flag == MoveFlag.EnPassantCapture)
         {
+            //capture behind the destination square
+            int offset = _isWhiteTurn ? -8 : 8;
+            int captureSquare = to + offset;
+
+            Piece enemyPawn = _isWhiteTurn ? Piece.BlackPawn : Piece.WhitePawn;
+
+            //remove captured pawn
+            _bitboards[(int)enemyPawn] &= ~(1UL << captureSquare);
+            _boardSquares[captureSquare] = Piece.None;
+        }
+        else if (validMove.IsCapture)
+        {
+            //standard capture
             _bitboards[(int)targetPiece] &= ~toBit;
         }
-
-        //update moving piece bitboard
-        _bitboards[(int)movingPiece] ^= (fromBit | toBit);
-        _boardSquares[to] = movingPiece;
-        _boardSquares[from] = Piece.None;
-
-        if (validMove.IsPromotion)
-        {
-            //remove the pawn from the destination bitboard
-            _bitboards[(int)movingPiece] &= ~toBit;
-
-            //get promoted piece type
-            Piece promotedPieceType = validMove.PromotionPieceType;
-
-            //if its blacks turn, adjust piece type
-            if (!_isWhiteTurn)
-            {
-                promotedPieceType = (Piece)((int)promotedPieceType + 6);
-            }
-
-            //place promoted piece
-            _bitboards[(int)promotedPieceType] |= toBit;
-            _boardSquares[to] = promotedPieceType;
-        }
-
+        #region castling
         if (validMove.Flag == MoveFlag.CastleKingSide)
         {
             if (_isWhiteTurn)
@@ -308,6 +298,45 @@ public class Bitboards
                 MoveRook(56, 59); // a8 -> d8
             }
         }
+        #endregion
+
+        //update moving piece bitboard
+        _bitboards[(int)movingPiece] ^= (fromBit | toBit);
+        _boardSquares[to] = movingPiece;
+        _boardSquares[from] = Piece.None;
+
+        #region pawns
+        if (validMove.IsPromotion)
+        {
+            //remove the pawn from the destination bitboard
+            _bitboards[(int)movingPiece] &= ~toBit;
+
+            //get promoted piece type
+            Piece promotedPieceType = validMove.PromotionPieceType;
+
+            //if its blacks turn, adjust piece type
+            if (!_isWhiteTurn)
+            {
+                promotedPieceType = (Piece)((int)promotedPieceType + 6);
+            }
+
+            //place promoted piece
+            _bitboards[(int)promotedPieceType] |= toBit;
+            _boardSquares[to] = promotedPieceType;
+        }
+
+        if (validMove.Flag == MoveFlag.PawnDoublePush)
+        {
+            int file = to % 8;
+            //set file bit
+            _enPassantMask = (ushort)(1 << file);
+        }
+        else
+        {
+            _enPassantMask = 0; //if not double push reset
+        }
+
+        #endregion
 
         UpdateTotalBitboards();
 
@@ -485,7 +514,6 @@ public class Bitboards
     }
     private bool MakeMoveAndCheckLegality(Move move)
     {
-        //save current state
         ulong fromBit = 1UL << move.StartingPos;
         ulong toBit = 1UL << move.EndingPos;
         Piece movingPiece = _boardSquares[move.StartingPos];
@@ -495,28 +523,44 @@ public class Bitboards
         ulong savedBlackBB = _blackPiecesBB;
         ulong savedAllBB = _allPiecesBB;
         ulong savedMovingPieceBB = _bitboards[(int)movingPiece];
-        ulong savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
 
+        //special variables for en passant
+        //destination square is not where the captured pawn is
+        Piece epCapturedPawn = Piece.None;
+        int epCaptureSquare = -1;
+        ulong savedEpPawnBB = 0;
 
-        //capture 
-        if (capturedPiece != Piece.None)
+        if (move.Flag == MoveFlag.EnPassantCapture)
         {
+            //what pawn is being captured
+            epCaptureSquare = _isWhiteTurn ? (move.EndingPos - 8) : (move.EndingPos + 8);
+            epCapturedPawn = _boardSquares[epCaptureSquare];
+            savedEpPawnBB = _bitboards[(int)epCapturedPawn];
+
+            //delete it
+            _bitboards[(int)epCapturedPawn] &= ~(1UL << epCaptureSquare);
+            _boardSquares[epCaptureSquare] = Piece.None;
+        }
+        else if (capturedPiece != Piece.None)
+        {
+            //normal capture
             _bitboards[(int)capturedPiece] &= ~toBit;
         }
 
-        //make move
+        //move piece
         _bitboards[(int)movingPiece] ^= (fromBit | toBit);
         _boardSquares[move.EndingPos] = movingPiece;
         _boardSquares[move.StartingPos] = Piece.None;
 
         UpdateTotalBitboards();
 
+        //is move legal (is king in check?)
+
         int kingSquare = GetKingSquare(_isWhiteTurn);
 
-        //check if king is attacked
         bool isKingAttacked = MoveGenerator.IsSquareAttacked(
             kingSquare,
-            !_isWhiteTurn, //by enemy
+            !_isWhiteTurn,
             _allPiecesBB,
             _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight],
             _bitboards[!_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop],
@@ -526,18 +570,44 @@ public class Bitboards
             _bitboards[!_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn]
         );
 
-        //return state to normal
+        //put everything back
+
+        //put moving piece back
         _bitboards[(int)movingPiece] = savedMovingPieceBB;
-        if (capturedPiece != Piece.None) _bitboards[(int)capturedPiece] = savedCapturedPieceBB;
+
+        //put captured piece back
+        if (move.Flag == MoveFlag.EnPassantCapture)
+        {
+            //put en passant captured pawn back
+            _bitboards[(int)epCapturedPawn] = savedEpPawnBB;
+            _boardSquares[epCaptureSquare] = epCapturedPawn;
+
+            //make sure destination square is empty
+            _boardSquares[move.EndingPos] = Piece.None;
+        }
+        else
+        {
+            //put captured piece back
+            if (capturedPiece != Piece.None)
+            {
+                //add piece to board array
+                _boardSquares[move.EndingPos] = capturedPiece;
+
+                //re add the bitboard bit
+                _bitboards[(int)capturedPiece] |= toBit;
+            }
+            else
+            {
+                _boardSquares[move.EndingPos] = Piece.None;
+            }
+        }
+
+        _boardSquares[move.StartingPos] = movingPiece;
 
         _whitePiecesBB = savedWhiteBB;
         _blackPiecesBB = savedBlackBB;
         _allPiecesBB = savedAllBB;
 
-        _boardSquares[move.StartingPos] = movingPiece;
-        _boardSquares[move.EndingPos] = capturedPiece;
-
-        //return if king is safe
         return !isKingAttacked;
     }
     public GameState CheckGameState()
