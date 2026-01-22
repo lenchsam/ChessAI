@@ -717,7 +717,7 @@ public static class MoveGenerator
             AddPromotionMoves(promotionPush, 8, false, moveList);
 
             //cannot promote from double push so no need to account for it here
-            GetMovesFromBitboard(doublePush, 16, MoveFlag.None, moveList); //double push
+            GetMovesFromBitboard(doublePush, 16, MoveFlag.PawnDoublePush, moveList); //double push
 
             ulong captureLeft = ((pawns & notAFile) << 7) & enemyPieces;
             ulong captureRight = ((pawns & notHFile) << 9) & enemyPieces;
