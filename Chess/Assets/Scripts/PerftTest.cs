@@ -30,7 +30,12 @@ public class PerftTest : MonoBehaviour
 
         sw.Stop();
 
-        ulong nps = (totalNodes * 1000) / (ulong)(sw.ElapsedMilliseconds);
+        long time = sw.ElapsedMilliseconds;
+        if (sw.ElapsedMilliseconds == 0)
+        {
+            time = 1;
+        }
+        ulong nps = (totalNodes * 1000) / (ulong)(time);
 
         UnityEngine.Debug.Log($"Perft({_depth}) Nodes: {totalNodes} | Time: {sw.ElapsedMilliseconds}ms | NPS: {nps:N0}");
     }
@@ -54,9 +59,15 @@ public class PerftTest : MonoBehaviour
             //needed so we can undo captures correctly
             Piece capturedPiece = _gameManager.BitboardScript.GetPieceOnSquare(move.EndingPos);
 
+            Castling oldCastlingRights = _gameManager.BitboardScript.CastlingRights;
+            ushort oldEnPassantMask = _gameManager.BitboardScript.EnPassantMask;
+
             _gameManager.BitboardScript.MakeMove(move);
             nodes += Perft(currentDepth - 1);
             _gameManager.BitboardScript.UndoMove(move, capturedPiece);
+
+            _gameManager.BitboardScript.CastlingRights = oldCastlingRights;
+            _gameManager.BitboardScript.EnPassantMask = oldEnPassantMask;
         }
 
         return nodes;

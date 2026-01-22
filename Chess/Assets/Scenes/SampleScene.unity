@@ -2027,6 +2027,8 @@ MonoBehaviour:
     GameEnded:
       m_PersistentCalls:
         m_Calls: []
+    CastlingRights: 15
+    EnPassantMask: 0
   _board: {fileID: 1777018107}
   _playerController: {fileID: 1585080427}
   _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
@@ -2084,7 +2086,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _gameManager: {fileID: 637657391}
-  _depth: 5
+  _depth: 1
 --- !u!4 &683786938
 Transform:
   m_ObjectHideFlags: 0

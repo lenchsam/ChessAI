@@ -125,9 +125,9 @@ public class Bitboards
 
     private CustomMovesList _currentLegalMoves = new CustomMovesList();
 
-    Castling CastlingRights = Castling.All;
+    public Castling CastlingRights = Castling.All;
 
-    ushort _enPassantMask = 0;
+    public ushort EnPassantMask = 0;
 
     private void ResetGame()
     {
@@ -329,11 +329,11 @@ public class Bitboards
         {
             int file = to % 8;
             //set file bit
-            _enPassantMask = (ushort)(1 << file);
+            EnPassantMask = (ushort)(1 << file);
         }
         else
         {
-            _enPassantMask = 0; //if not double push reset
+            EnPassantMask = 0; //if not double push reset
         }
 
         #endregion
@@ -496,7 +496,7 @@ public class Bitboards
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,
             _isWhiteTurn,
-            _enPassantMask,
+            EnPassantMask,
             CastlingRights,
             pseudoMoves
         );
@@ -512,39 +512,100 @@ public class Bitboards
         }
         return moves.Length;
     }
+    public bool IsSquareAttacked(int square, bool byWhite)
+    {
+        //knights
+        ulong knightAttacks = MoveGenerator.KnightLookup[square];
+        ulong enemyKnights = _bitboards[byWhite ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
+        if ((knightAttacks & enemyKnights) != 0) return true;
+
+        //king
+        ulong kingAttacks = MoveGenerator.KingLookup[square];
+        ulong enemyKing = _bitboards[byWhite ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
+        if ((kingAttacks & enemyKing) != 0) return true;
+
+        //pawns
+        ulong pawnAttacks = byWhite ? MoveGenerator.BlackPawnLookup[square] : MoveGenerator.WhitePawnLookup[square];
+        ulong enemyPawns = _bitboards[byWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
+        if ((pawnAttacks & enemyPawns) != 0) return true;
+
+        //bishops/queens
+        ulong bishopAttacks = MoveGenerator.GetSliderAttacks(Piece.WhiteBishop, square, _allPiecesBB);
+        ulong enemyBishops = _bitboards[byWhite ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop];
+        ulong enemyQueens = _bitboards[byWhite ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
+
+        if ((bishopAttacks & (enemyBishops | enemyQueens)) != 0) return true;
+
+        //rook/queens
+        ulong rookAttacks = MoveGenerator.GetSliderAttacks(Piece.WhiteRook, square, _allPiecesBB);
+        ulong enemyRooks = _bitboards[byWhite ? (int)Piece.WhiteRook : (int)Piece.BlackRook];
+
+        if ((rookAttacks & (enemyRooks | enemyQueens)) != 0) return true;
+
+        return false;
+    }
     private bool MakeMoveAndCheckLegality(Move move)
     {
+        int kingSquare = GetKingSquare(_isWhiteTurn);
+        Piece movingPiece = _boardSquares[move.StartingPos];
+
+        //validate castling move
+        if (move.Flag == MoveFlag.CastleKingSide || move.Flag == MoveFlag.CastleQueenSide)
+        {
+            //cant castle out of check
+            if (IsSquareAttacked(kingSquare, !_isWhiteTurn)) return false;
+
+            //cant castle through check
+            int crossingSquare = -1;
+            if (move.Flag == MoveFlag.CastleKingSide)
+                crossingSquare = _isWhiteTurn ? 5 : 61;
+            else
+                crossingSquare = _isWhiteTurn ? 3 : 59;
+
+            if (IsSquareAttacked(crossingSquare, !_isWhiteTurn)) return false;
+        }
+
+        //save 
         ulong fromBit = 1UL << move.StartingPos;
         ulong toBit = 1UL << move.EndingPos;
-        Piece movingPiece = _boardSquares[move.StartingPos];
         Piece capturedPiece = _boardSquares[move.EndingPos];
 
         ulong savedWhiteBB = _whitePiecesBB;
         ulong savedBlackBB = _blackPiecesBB;
         ulong savedAllBB = _allPiecesBB;
         ulong savedMovingPieceBB = _bitboards[(int)movingPiece];
+        ulong savedCapturedPieceBB = (capturedPiece != Piece.None) ? _bitboards[(int)capturedPiece] : 0;
 
-        //special variables for en passant
-        //destination square is not where the captured pawn is
+        //en passant capture handling
         Piece epCapturedPawn = Piece.None;
         int epCaptureSquare = -1;
         ulong savedEpPawnBB = 0;
 
+        //captures
         if (move.Flag == MoveFlag.EnPassantCapture)
         {
-            //what pawn is being captured
             epCaptureSquare = _isWhiteTurn ? (move.EndingPos - 8) : (move.EndingPos + 8);
             epCapturedPawn = _boardSquares[epCaptureSquare];
             savedEpPawnBB = _bitboards[(int)epCapturedPawn];
 
-            //delete it
+            //remove en passant pawn
             _bitboards[(int)epCapturedPawn] &= ~(1UL << epCaptureSquare);
             _boardSquares[epCaptureSquare] = Piece.None;
         }
         else if (capturedPiece != Piece.None)
         {
-            //normal capture
+            //remove captured piece
             _bitboards[(int)capturedPiece] &= ~toBit;
+        }
+
+        //handle castling
+        if (move.Flag == MoveFlag.CastleKingSide)
+        {
+            if (_isWhiteTurn) MoveRook(7, 5); else MoveRook(63, 61);
+        }
+        else if (move.Flag == MoveFlag.CastleQueenSide)
+        {
+            if (_isWhiteTurn) MoveRook(0, 3); else MoveRook(56, 59);
         }
 
         //move piece
@@ -554,47 +615,29 @@ public class Bitboards
 
         UpdateTotalBitboards();
 
-        //is move legal (is king in check?)
+        //if king moved need to check new king position
+        int squareToCheck = (movingPiece == Piece.WhiteKing || movingPiece == Piece.BlackKing) ? move.EndingPos : kingSquare;
+        bool isKingAttacked = IsSquareAttacked(squareToCheck, !_isWhiteTurn);
 
-        int kingSquare = GetKingSquare(_isWhiteTurn);
-
-        bool isKingAttacked = MoveGenerator.IsSquareAttacked(
-            kingSquare,
-            !_isWhiteTurn,
-            _allPiecesBB,
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn]
-        );
-
-        //put everything back
-
-        //put moving piece back
+        //restore moving piece
         _bitboards[(int)movingPiece] = savedMovingPieceBB;
+        _boardSquares[move.StartingPos] = movingPiece;
 
-        //put captured piece back
+        //restoring captured piece
         if (move.Flag == MoveFlag.EnPassantCapture)
         {
-            //put en passant captured pawn back
+            //restore en passant capture
             _bitboards[(int)epCapturedPawn] = savedEpPawnBB;
             _boardSquares[epCaptureSquare] = epCapturedPawn;
-
-            //make sure destination square is empty
             _boardSquares[move.EndingPos] = Piece.None;
         }
         else
         {
-            //put captured piece back
+            //restore capture
             if (capturedPiece != Piece.None)
             {
-                //add piece to board array
+                _bitboards[(int)capturedPiece] = savedCapturedPieceBB;
                 _boardSquares[move.EndingPos] = capturedPiece;
-
-                //re add the bitboard bit
-                _bitboards[(int)capturedPiece] |= toBit;
             }
             else
             {
@@ -602,8 +645,17 @@ public class Bitboards
             }
         }
 
-        _boardSquares[move.StartingPos] = movingPiece;
+        //undo rook castling move
+        if (move.Flag == MoveFlag.CastleKingSide)
+        {
+            if (_isWhiteTurn) MoveRook(5, 7); else MoveRook(61, 63);
+        }
+        else if (move.Flag == MoveFlag.CastleQueenSide)
+        {
+            if (_isWhiteTurn) MoveRook(3, 0); else MoveRook(59, 56);
+        }
 
+        //restore bitboards
         _whitePiecesBB = savedWhiteBB;
         _blackPiecesBB = savedBlackBB;
         _allPiecesBB = savedAllBB;
@@ -619,17 +671,7 @@ public class Bitboards
 
         int kingSquare = GetKingSquare(_isWhiteTurn);
 
-        bool isInCheck = MoveGenerator.IsSquareAttacked(
-            kingSquare,
-            !_isWhiteTurn,
-            _allPiecesBB,
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook], 
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen], 
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing],
-            _bitboards[!_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn]
-        );
+        bool isInCheck = IsSquareAttacked(kingSquare, !_isWhiteTurn);
 
         if (isInCheck)
         {
@@ -648,8 +690,30 @@ public class Bitboards
 
         //which piece is moving
         Piece movingPiece = _boardSquares[move.StartingPos];
-
         Piece capturedPiece = _boardSquares[move.EndingPos];
+
+        CheckCastlingRights(movingPiece, move.StartingPos);
+
+        if (capturedPiece == Piece.WhiteRook)
+        {
+            if (move.EndingPos == 0) CastlingRights &= ~Castling.WhiteQueen; //Capture a1
+            if (move.EndingPos == 7) CastlingRights &= ~Castling.WhiteKing;  //Capture h1
+        }
+        else if (capturedPiece == Piece.BlackRook)
+        {
+            if (move.EndingPos == 56) CastlingRights &= ~Castling.BlackQueen; //Capture a8
+            if (move.EndingPos == 63) CastlingRights &= ~Castling.BlackKing;  //Capture h8
+        }
+
+        if (move.Flag == MoveFlag.PawnDoublePush)
+        {
+            int file = move.EndingPos % 8;
+            EnPassantMask = (ushort)(1 << file);
+        }
+        else
+        {
+            EnPassantMask = 0;
+        }
 
         //is capture then remove captured piece
         if (capturedPiece != Piece.None)
@@ -665,6 +729,15 @@ public class Bitboards
 
             _bitboards[(int)epPawn] &= ~(1UL << capturePos);
             _boardSquares[capturePos] = Piece.None;
+        }
+
+        if (move.Flag == MoveFlag.CastleKingSide)
+        {
+            if (_isWhiteTurn) MoveRook(7, 5); else MoveRook(63, 61);
+        }
+        else if (move.Flag == MoveFlag.CastleQueenSide)
+        {
+            if (_isWhiteTurn) MoveRook(0, 3); else MoveRook(56, 59);
         }
 
         //handle promotion
@@ -702,6 +775,19 @@ public class Bitboards
 
         ulong fromBit = 1UL << move.StartingPos;
         ulong toBit = 1UL << move.EndingPos;
+
+        if (move.Flag == MoveFlag.CastleKingSide)
+        {
+            // Move Rook back from f1/f8 to h1/h8
+            if (_isWhiteTurn) MoveRook(5, 7);
+            else MoveRook(61, 63);
+        }
+        else if (move.Flag == MoveFlag.CastleQueenSide)
+        {
+            // Move Rook back from d1/d8 to a1/a8
+            if (_isWhiteTurn) MoveRook(3, 0);
+            else MoveRook(59, 56);
+        }
 
         //handle promotion differently as we have to remove the promoted piece and add back the pawn
         if (move.IsPromotion)
