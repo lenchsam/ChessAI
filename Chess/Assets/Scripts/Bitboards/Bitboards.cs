@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using static BitboardHelpers;
-using static MoveGenerator;
 
 public struct Move
 {
@@ -70,6 +68,41 @@ public struct MoveFlag
     public const int CaptureMask = 4;   // 0100 binary
 }
 
+public struct Material
+{
+    public ulong Pawns;
+    public ulong Knights;
+    public ulong Queens;
+    public ulong King;
+    public ulong Bishops;
+    public ulong Rooks;
+
+    public Material(ulong pawns, ulong knights, ulong queens, ulong king, ulong bishop, ulong rooks)
+    {
+        Pawns = pawns;
+        Knights = knights;
+        Queens = queens;
+        King = king;
+        Bishops = bishop;
+        Rooks = rooks;
+    }
+
+    public int SumOfMaterialNumbers(int pawnValue, int knightValue, int queenValue, int bishopValue, int rookValue)
+    {
+        int sum = 0;
+
+        int pawnsEval = BitboardHelpers.CountBits(Pawns) * pawnValue;
+        int knightsEval = BitboardHelpers.CountBits(Knights) * knightValue;
+        int queensEval = BitboardHelpers.CountBits(Queens) * queenValue;
+        int numKing = BitboardHelpers.CountBits(King);
+        int bishopsEval = BitboardHelpers.CountBits(Bishops) * bishopValue;
+        int rooksEval = BitboardHelpers.CountBits(Rooks) * rookValue;
+
+        sum = pawnsEval + knightsEval + queensEval + bishopsEval + rooksEval;
+
+        return sum;
+    }
+}
 public enum PawnPromotion : byte
 {
     None = 0,           //0000
@@ -97,6 +130,8 @@ public enum GameState
     Checkmate,
     Stalemate
 }
+
+
 [System.Serializable]
 public class Bitboards
 {
@@ -108,6 +143,7 @@ public class Bitboards
     private ulong[] _bitboards = new ulong[12];
     private ulong _whitePiecesBB, _blackPiecesBB, _allPiecesBB;
 
+    
     bool _isWhiteTurn = true;
 
     //used for fast lookups of which piece is on which square
@@ -144,11 +180,26 @@ public class Bitboards
 
     }
 
+    public Material GetMaterialForColour(bool isWhite)
+    {
+        ulong pawns = _bitboards[isWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
+        ulong knights = _bitboards[isWhite ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
+        ulong queens = _bitboards[isWhite ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
+        ulong king = _bitboards[isWhite ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
+        ulong bishops = _bitboards[isWhite ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop];
+        ulong rooks = _bitboards[isWhite ? (int)Piece.WhiteRook : (int)Piece.BlackRook];
+
+        return new Material(pawns, knights, queens, king, bishops, rooks);
+    }
     public Move[] GetCurrentLegalMoves()
     {
         return _currentLegalMoves.Moves;
     }
 
+    public bool GetTurn()
+    {
+        return _isWhiteTurn;
+    }
     public void SetTurn(bool isWhite)
     {
         _isWhiteTurn = isWhite;
@@ -483,15 +534,11 @@ public class Bitboards
         CustomMovesList pseudoMoves = new CustomMovesList();
 
         //get correct bitboards based on turn
-        ulong pawns = _bitboards[_isWhiteTurn ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
-        ulong knights = _bitboards[_isWhiteTurn ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
-        ulong bishops = _bitboards[_isWhiteTurn ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop];
-        ulong rooks = _bitboards[_isWhiteTurn ? (int)Piece.WhiteRook : (int)Piece.BlackRook];
-        ulong queens = _bitboards[_isWhiteTurn ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
-        ulong king = _bitboards[_isWhiteTurn ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
 
+
+        Material mat = GetMaterialForColour(_isWhiteTurn);
         MoveGenerator.GeneratePseudoLegalMoves(
-            pawns, knights, bishops, rooks, queens, king,
+            mat,
             _allPiecesBB,
             _isWhiteTurn ? _whitePiecesBB : _blackPiecesBB,
             _isWhiteTurn ? _blackPiecesBB : _whitePiecesBB,

@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     public Bitboards BitboardScript;
+    public Evaluation Eval;
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private BoardSettings _boardSettings;
@@ -24,6 +25,7 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         BitboardScript = new Bitboards();
+        Eval = new Evaluation();
         _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
         _visualiseBitboard.SetHighlightColour(_boardSettings.highlightColor);
     }
@@ -96,6 +98,8 @@ public class GameManager : MonoBehaviour
             GameObject piece = _board.GetPieceFromPosition(from);
             if (piece != null) piece.transform.position = new Vector2(fromX, fromY);
         }
+
+        Eval.Evaluate(BitboardScript);
     }
 
     private Piece GetPieceFromPromotion(PawnPromotion promotion, bool isWhite)

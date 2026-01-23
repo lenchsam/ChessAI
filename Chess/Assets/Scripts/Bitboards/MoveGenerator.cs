@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 [System.Serializable]
 public static class MoveGenerator
@@ -184,7 +183,7 @@ public static class MoveGenerator
     }
 #region public utils
     public static void GeneratePseudoLegalMoves(
-        ulong pawns, ulong knights, ulong bishops, ulong rooks, ulong queens, ulong kings,
+        Material playerMaterial,
         ulong allPieces, ulong ownPieces, ulong enemyPieces,
         bool isWhiteTurn, 
         ushort enPassantMask,
@@ -192,15 +191,15 @@ public static class MoveGenerator
         CustomMovesList moveList)
     {
         //non sliding pieces
-        GenerateKnightMoves(knights, ownPieces, enemyPieces, moveList);
-        GenerateKingMoves(kings, ownPieces, enemyPieces, moveList, castlingRights, allPieces);
-        GeneratePawnMoves(pawns, allPieces, enemyPieces, isWhiteTurn, moveList, enPassantMask);
+        GenerateKnightMoves(playerMaterial.Knights, ownPieces, enemyPieces, moveList);
+        GenerateKingMoves(playerMaterial.King, ownPieces, enemyPieces, moveList, castlingRights, allPieces);
+        GeneratePawnMoves(playerMaterial.Pawns, allPieces, enemyPieces, isWhiteTurn, moveList, enPassantMask);
 
         //sliding pieces
         //doesnt matter if white or black piece type as attacks are the same
-        GenerateSlidingMoves(bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList);
-        GenerateSlidingMoves(rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList);
-        GenerateSlidingMoves(queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(playerMaterial.Bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(playerMaterial.Rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(playerMaterial.Queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
     }
 
     public static CustomMovesList GetMovesFromSquare(int square, Piece pieceType, 
@@ -847,12 +846,6 @@ public static class MoveGenerator
             int fromIndex = toIndex - offset;
 
             moveList.Add(new Move(fromIndex, toIndex, flag));
-
-            //if doublepush
-            if(offset == 16)
-            {
-                //get file of the push, add this file into the en passant flag
-            }
         }
     }
     #endregion
