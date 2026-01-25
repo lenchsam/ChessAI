@@ -40,7 +40,7 @@ public class GameManager : MonoBehaviour
         _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/P7/RNBQKBNR");
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);

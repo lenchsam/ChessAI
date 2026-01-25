@@ -77,7 +77,7 @@ public struct Material
     public ulong Bishops;
     public ulong Rooks;
 
-    public Material(ulong pawns, ulong knights, ulong queens, ulong king, ulong bishop, ulong rooks)
+    public Material(ulong pawns, ulong knights, ulong bishop, ulong rooks, ulong queens, ulong king)
     {
         Pawns = pawns;
         Knights = knights;
@@ -87,7 +87,7 @@ public struct Material
         Rooks = rooks;
     }
 
-    public int SumOfMaterialNumbers(int pawnValue, int knightValue, int queenValue, int bishopValue, int rookValue)
+    public int SumOfMaterialNumbers(int pawnValue, int knightValue, int bishopValue, int rookValue, int queenValue )
     {
         int sum = 0;
 
@@ -184,12 +184,12 @@ public class Bitboards
     {
         ulong pawns = _bitboards[isWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
         ulong knights = _bitboards[isWhite ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
-        ulong queens = _bitboards[isWhite ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
-        ulong king = _bitboards[isWhite ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
         ulong bishops = _bitboards[isWhite ? (int)Piece.WhiteBishop : (int)Piece.BlackBishop];
         ulong rooks = _bitboards[isWhite ? (int)Piece.WhiteRook : (int)Piece.BlackRook];
+        ulong queens = _bitboards[isWhite ? (int)Piece.WhiteQueen : (int)Piece.BlackQueen];
+        ulong king = _bitboards[isWhite ? (int)Piece.WhiteKing : (int)Piece.BlackKing];
 
-        return new Material(pawns, knights, queens, king, bishops, rooks);
+        return new Material(pawns, knights, bishops, rooks, queens, king);
     }
     public Move[] GetCurrentLegalMoves()
     {
@@ -464,30 +464,13 @@ public class Bitboards
 
         MovingPieceEvent.Invoke(moves);
     }
-    public ulong GetPositionBitboardFromPiece(Piece piece)
+    public ulong GetBitboard(Piece piece)
     {
-        switch (piece) {
-            case Piece.WhitePawn:
-            case Piece.BlackPawn:
-                return _bitboards[(int)Piece.WhitePawn] | _bitboards[(int)Piece.BlackPawn];
-            case Piece.WhiteKnight:
-            case Piece.BlackKnight:
-                return _bitboards[(int)Piece.WhiteKnight] | _bitboards[(int)Piece.BlackKnight];
-            case Piece.WhiteKing:
-            case Piece.BlackKing:
-                return _bitboards[(int)Piece.WhiteKing] | _bitboards[(int)Piece.BlackKing];
-            case Piece.WhiteBishop:
-            case Piece.BlackBishop:
-                return _bitboards[(int)Piece.WhiteBishop] | _bitboards[(int)Piece.BlackBishop];
-            case Piece.WhiteRook:
-            case Piece.BlackRook:
-                return _bitboards[(int)Piece.WhiteRook] | _bitboards[(int)Piece.BlackRook];
-            case Piece.WhiteQueen:
-            case Piece.BlackQueen:
-                return _bitboards[(int)Piece.WhiteQueen] | _bitboards[(int)Piece.BlackQueen];
-        }
-
-        return 0UL;
+        return _bitboards[(int)piece];
+    }
+    public ulong GetAllPieces()
+    {
+        return _allPiecesBB;
     }
     private void UpdateTotalBitboards()
     {

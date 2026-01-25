@@ -39,7 +39,7 @@ public class VisualiseBitboard : MonoBehaviour
     }
     public void DisplayPieceBitboard(int piece)
     {
-        ulong bitboard = _gameManager.BitboardScript.GetPositionBitboardFromPiece((Piece)piece);
+        ulong bitboard = _gameManager.BitboardScript.GetBitboard((Piece)piece);
         ShowBitboardOverlay(bitboard);
     }
     private void ClearHighlights()
