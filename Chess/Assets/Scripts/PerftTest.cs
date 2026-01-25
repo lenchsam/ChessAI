@@ -59,9 +59,9 @@ public class PerftTest : MonoBehaviour
             Castling oldCastlingRights = _gameManager.BitboardScript.CastlingRights;
             ushort oldEnPassantMask = _gameManager.BitboardScript.EnPassantMask;
 
-            Piece capturedPiece = _gameManager.BitboardScript.MakeMove(move);
+            _gameManager.BitboardScript.MakeMove(move);
             nodes += Perft(currentDepth - 1);
-            _gameManager.BitboardScript.UndoMove(move, capturedPiece);
+            _gameManager.BitboardScript.UndoMove(move);
 
             _gameManager.BitboardScript.CastlingRights = oldCastlingRights;
             _gameManager.BitboardScript.EnPassantMask = oldEnPassantMask;

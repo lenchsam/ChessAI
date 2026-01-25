@@ -21,13 +21,14 @@ public class NegaMax
         Move bestMove = new Move();
         int maxEval = int.MinValue;
 
-        foreach (Move move in possibleMoves.Moves)
+        for (int i = 0; i < possibleMoves.Length; i++)
         {
-            Piece capturedPiece = bitboard.MakeMove(move);
+            Move move = possibleMoves.Moves[i];
+            bitboard.MakeMove(move);
 
             int eval = -Search(depth - 1);
 
-            bitboard.UndoMove(move, capturedPiece);
+            bitboard.UndoMove(move);
 
             if (eval > maxEval)
             {
@@ -62,12 +63,13 @@ public class NegaMax
 
         int maxEval = int.MinValue;
 
-        foreach(Move move in possibleMoves.Moves)
+        for (int i = 0; i < possibleMoves.Length; i++)
         {
-            Piece capturedPiece = bitboard.MakeMove(move);
+            Move move = possibleMoves.Moves[i];
+            bitboard.MakeMove(move);
             int eval = -Search(depth - 1);
             maxEval = Mathf.Max(maxEval, eval);
-            bitboard.UndoMove(move, capturedPiece);
+            bitboard.UndoMove(move);
         }
         return maxEval;
     }

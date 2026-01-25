@@ -15,7 +15,7 @@ public class UIManager : MonoBehaviour
         _gameManager.BitboardScript.GameEnded.AddListener(GameEnded);
     }
 
-    void GameEnded(GameState state, bool isWhiteTurn)
+    void GameEnded(EndingState state, bool isWhiteTurn)
     {
         DisableGameUI();
         EnableGameOverUI(state, isWhiteTurn);
@@ -37,17 +37,17 @@ public class UIManager : MonoBehaviour
     }
 
 
-    private void EnableGameOverUI(GameState state, bool isWhiteTurn)
+    private void EnableGameOverUI(EndingState state, bool isWhiteTurn)
     {
         string winner = isWhiteTurn ? "White" : "Black";
         _gameOverBackground.SetActive(true);
 
         switch (state)
         {
-            case GameState.Checkmate:
+            case EndingState.Checkmate:
                 _endingText.text = "Checkmate: " + winner + " Wins";
                 break;
-            case GameState.Stalemate:
+            case EndingState.Stalemate:
                 _endingText.text = "Stalemate: Draw";
                 break;
         }
