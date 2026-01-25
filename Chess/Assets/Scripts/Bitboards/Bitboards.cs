@@ -712,8 +712,14 @@ public class Bitboards
             return GameState.Stalemate;
         }
     }
-    #region perf test methods
-    public void MakeMove(Move move)
+    
+    #region search methods
+    public bool IsInCheck()
+    {
+        int kingSquare = GetKingSquare(_isWhiteTurn);
+        return IsSquareAttacked(kingSquare, !_isWhiteTurn);
+    }
+    public Piece MakeMove(Move move)
     {
         ulong fromBit = 1UL << move.StartingPos;
         ulong toBit = 1UL << move.EndingPos;
@@ -723,6 +729,25 @@ public class Bitboards
         Piece capturedPiece = _boardSquares[move.EndingPos];
 
         CheckCastlingRights(movingPiece, move.StartingPos);
+        
+
+
+
+        //debuging check
+        if (movingPiece == Piece.None)
+        {
+            Debug.LogError($"Attempted to move from {move.StartingPos} but the square is empty!");
+            return Piece.None;
+        }
+        int pieceIdx = (int)movingPiece;
+        if (pieceIdx < 0 || pieceIdx >= 12)
+        {
+            Debug.LogError($"Invalid piece index: {pieceIdx} at square {move.StartingPos}");
+            return Piece.None;
+        }
+
+
+
 
         if (capturedPiece == Piece.WhiteRook)
         {
@@ -797,6 +822,8 @@ public class Bitboards
 
         UpdateTotalBitboards();
         _isWhiteTurn = !_isWhiteTurn;
+
+        return capturedPiece;
     }
 
     public void UndoMove(Move move, Piece capturedPiece)

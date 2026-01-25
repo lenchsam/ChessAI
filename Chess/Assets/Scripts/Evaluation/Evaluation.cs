@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
-
 public class Evaluation
 {
     private const int WHITE = 0;
@@ -171,7 +169,7 @@ public class Evaluation
     static int[] phaseInc =
         {
         0, 1, 1, 2, 4, 0, //white pieces = 0-5
-        0, 1, 1, 2, 4, 0  //black pieces = 6-11
+        0, 1, 1, 2, 4, 0  //black pieces = 6-11 
     };
     static Evaluation()
     {

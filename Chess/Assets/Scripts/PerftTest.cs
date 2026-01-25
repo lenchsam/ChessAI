@@ -56,13 +56,10 @@ public class PerftTest : MonoBehaviour
         {
             Move move = movesList.Moves[i];
 
-            //needed so we can undo captures correctly
-            Piece capturedPiece = _gameManager.BitboardScript.GetPieceOnSquare(move.EndingPos);
-
             Castling oldCastlingRights = _gameManager.BitboardScript.CastlingRights;
             ushort oldEnPassantMask = _gameManager.BitboardScript.EnPassantMask;
 
-            _gameManager.BitboardScript.MakeMove(move);
+            Piece capturedPiece = _gameManager.BitboardScript.MakeMove(move);
             nodes += Perft(currentDepth - 1);
             _gameManager.BitboardScript.UndoMove(move, capturedPiece);
 

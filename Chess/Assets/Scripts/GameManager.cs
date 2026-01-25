@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -21,11 +22,20 @@ public class GameManager : MonoBehaviour
     private int _pendingPromotionFrom;
     private int _pendingPromotionTo;
 
+    private NegaMax _negaMax;
+
+    [Header("AI Settings")]
+    [SerializeField] private int _searchDepth = 3;
+    [SerializeField] private bool _isAiEnabled = true;
+
     public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
     {
         BitboardScript = new Bitboards();
         Eval = new Evaluation();
+
+        _negaMax = new NegaMax(BitboardScript);
+
         _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
         _visualiseBitboard.SetHighlightColour(_boardSettings.highlightColor);
     }
@@ -40,7 +50,7 @@ public class GameManager : MonoBehaviour
         _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));
 
         //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/P7/RNBQKBNR");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
@@ -88,6 +98,13 @@ public class GameManager : MonoBehaviour
             _board.MovePieceVisual(from, to, visualPiece, moveFlag);
 
             _playerController.ToggleIsWhite();
+
+            //is it AIs turn
+            //assuming AI is always black
+            if (_isAiEnabled && !BitboardScript.GetTurn())
+            {
+                StartCoroutine(PerformAiMove());
+            }
         }
         else
         {
@@ -102,6 +119,32 @@ public class GameManager : MonoBehaviour
         Eval.Evaluate(BitboardScript);
     }
 
+    private IEnumerator PerformAiMove()
+    {
+        //wait 1 frame so UI updates before searching
+        yield return null;
+
+        //perform search
+        Move bestMove = _negaMax.FindBestMove(_searchDepth);
+
+        //is valid move found
+        if (bestMove.StartingPos != bestMove.EndingPos) 
+        {
+            //promotion handling
+            PawnPromotion promo = PawnPromotion.None;
+            if (bestMove.IsPromotion)
+            {
+                //map moveflag to pawnpromotion enum
+                if (bestMove.PromotionPieceType == Piece.WhiteQueen) promo = PawnPromotion.PromoteQueen;
+                else if (bestMove.PromotionPieceType == Piece.WhiteRook) promo = PawnPromotion.PromoteRook;
+                else if (bestMove.PromotionPieceType == Piece.WhiteBishop) promo = PawnPromotion.PromoteBishop;
+                else if (bestMove.PromotionPieceType == Piece.WhiteKnight) promo = PawnPromotion.PromoteKnight;
+            }
+
+            //do move
+            FinalizeMove(bestMove.StartingPos, bestMove.EndingPos, promo);
+        }
+    }
     private Piece GetPieceFromPromotion(PawnPromotion promotion, bool isWhite)
     {
         switch (promotion)
