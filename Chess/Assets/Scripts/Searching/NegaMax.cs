@@ -42,8 +42,7 @@ public class NegaMax
     {
         if(depth == 0)
         {
-            //return evaluation
-            return 0;
+            return evaluator.Evaluate(bitboard);
         }
 
         CustomMovesList possibleMoves = new CustomMovesList();
