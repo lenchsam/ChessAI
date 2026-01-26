@@ -2029,8 +2029,8 @@ MonoBehaviour:
   _rookPromotion: {fileID: 1442432784}
   _bishopPromotion: {fileID: 1874963391}
   _knightPromotion: {fileID: 2055098322}
-  _searchDepth: 3
-  _isAiEnabled: 1
+  _searchDepth: 4
+  _aiSide: 0
   OnMoveRequested:
     m_PersistentCalls:
       m_Calls: []

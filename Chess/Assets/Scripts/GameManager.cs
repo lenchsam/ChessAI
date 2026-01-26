@@ -1,10 +1,17 @@
+using NUnit.Framework.Constraints;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-
+public enum AiSide
+{
+    None,
+    Black,
+    White
+}
 public class GameManager : MonoBehaviour
 {
+
     //public get, private set
     //allow other scripts to read but not modify
     public Bitboards BitboardScript { get; private set; }
@@ -27,8 +34,9 @@ public class GameManager : MonoBehaviour
     private NegaMax _negaMax;
 
     [Header("AI Settings")]
+    [Range(1, 6)]
     [SerializeField] private int _searchDepth = 3;
-    [SerializeField] private bool _isAiEnabled = true;
+    [SerializeField] private AiSide _aiSide = AiSide.Black;
 
     public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
@@ -49,17 +57,16 @@ public class GameManager : MonoBehaviour
         _queenPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteQueen));
         _rookPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteRook));
         _bishopPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteBishop));
-        _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));
+        _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));;
 
-        //uppercase = white lowercase = black
-        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
-        _board.CreateBoard();
-        _board.DisplayPieces(BitboardScript);
+        RestartGame();
     }
 
     void OnMoveRequestedHandler(int from, int to)
     {
+        bool isWhiteTurn = BitboardScript.GetTurn();
+        if (ShouldAiMove(isWhiteTurn)) return; //stop player from moving on AIs turn
+
         //check for promotion
         if (BitboardScript.IsPromotionMove(from, to))
         {
@@ -101,9 +108,9 @@ public class GameManager : MonoBehaviour
 
             _playerController.ToggleIsWhite();
 
-            //is it AIs turn
-            //assuming AI is always black
-            if (_isAiEnabled && !BitboardScript.GetTurn())
+            //should AI move now
+            bool isNewTurnWhite = BitboardScript.GetTurn();
+            if (ShouldAiMove(isNewTurnWhite))
             {
                 StartCoroutine(PerformAiMove());
             }
@@ -117,8 +124,6 @@ public class GameManager : MonoBehaviour
             GameObject piece = _board.GetPieceFromPosition(from);
             if (piece != null) piece.transform.position = new Vector2(fromX, fromY);
         }
-
-        Eval.Evaluate(BitboardScript);
     }
 
     private IEnumerator PerformAiMove()
@@ -147,6 +152,14 @@ public class GameManager : MonoBehaviour
             FinalizeMove(bestMove.StartingPos, bestMove.EndingPos, promo);
         }
     }
+    private bool ShouldAiMove(bool isWhiteTurn)
+    {
+        if (_aiSide == AiSide.None) return false;
+        if (_aiSide == AiSide.White && isWhiteTurn) return true;
+        if (_aiSide == AiSide.Black && !isWhiteTurn) return true;
+        return false;
+    }
+
     private Piece GetPieceFromPromotion(PawnPromotion promotion, bool isWhite)
     {
         switch (promotion)
@@ -163,7 +176,15 @@ public class GameManager : MonoBehaviour
     {
         BitboardScript.SetTurn(true);
         _playerController.IsPlayerWhite = true;
+
         BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
+
+        //if AI plays white make the move
+        if (ShouldAiMove(true))
+        {
+            StartCoroutine(PerformAiMove());
+        }
     }
 }
