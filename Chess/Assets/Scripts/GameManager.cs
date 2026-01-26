@@ -177,7 +177,7 @@ public class GameManager : MonoBehaviour
         BitboardScript.SetTurn(true);
         _playerController.IsPlayerWhite = true;
 
-        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
 

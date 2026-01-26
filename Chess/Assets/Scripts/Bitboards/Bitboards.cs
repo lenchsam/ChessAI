@@ -497,6 +497,9 @@ public class Bitboards
     }
     public bool IsSquareAttacked(int square, bool byWhite)
     {
+        if (square < 0 || square >= 64)
+            return false;
+
         //knights
         ulong knightAttacks = MoveGenerator.KnightLookup[square];
         ulong enemyKnights = _bitboards[byWhite ? (int)Piece.WhiteKnight : (int)Piece.BlackKnight];
@@ -508,7 +511,7 @@ public class Bitboards
         if ((kingAttacks & enemyKing) != 0) return true;
 
         //pawns
-        ulong pawnAttacks = byWhite ? MoveGenerator.BlackPawnLookup[square] : MoveGenerator.WhitePawnLookup[square];
+        ulong pawnAttacks = byWhite ? MoveGenerator.WhitePawnLookup[square] : MoveGenerator.BlackPawnLookup[square];
         ulong enemyPawns = _bitboards[byWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
         if ((pawnAttacks & enemyPawns) != 0) return true;
 
