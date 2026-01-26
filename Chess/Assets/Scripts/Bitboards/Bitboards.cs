@@ -724,16 +724,15 @@ public class Bitboards
     }
     public void MakeMove(Move move)
     {
-        Piece capturedPiece = _boardSquares[move.EndingPos];
-
         ulong fromBit = 1UL << move.StartingPos;
         ulong toBit = 1UL << move.EndingPos;
         Piece movingPiece = _boardSquares[move.StartingPos];
+        Piece capturedPiece = _boardSquares[move.EndingPos];
 
         if (move.Flag == MoveFlag.EnPassantCapture)
         {
             int capturePos = _isWhiteTurn ? (move.EndingPos - 8) : (move.EndingPos + 8);
-
+            capturedPiece = _boardSquares[capturePos]; //what is actually captured
             Piece pawn = _isWhiteTurn ? Piece.BlackPawn : Piece.WhitePawn;
 
             _bitboards[(int)pawn] &= ~(1UL << capturePos);
@@ -741,8 +740,10 @@ public class Bitboards
         }
         else if (capturedPiece != Piece.None)
         {
+            Debug.Log(capturedPiece);
             _bitboards[(int)capturedPiece] &= ~toBit;
         }
+
 
         //save history
         _gameStateHistory.Push(new GameState(capturedPiece, CastlingRights, EnPassantMask));
@@ -826,6 +827,7 @@ public class Bitboards
         }
         else
         {
+            Debug.Log("moved piece = " + movedPiece);
             //for non promotion moves remove from destination square
             _bitboards[(int)movedPiece] &= ~toBit;
         }

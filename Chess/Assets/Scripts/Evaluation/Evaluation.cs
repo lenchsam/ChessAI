@@ -253,7 +253,6 @@ public class Evaluation
 
         int score = (mgScore * mgPhase + egScore * egPhase) / 24;
 
-        Debug.Log(score);
         return score;
     }
 }
