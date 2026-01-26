@@ -61,7 +61,7 @@ public class PerftTest : MonoBehaviour
 
             _gameManager.BitboardScript.MakeMove(move);
             nodes += Perft(currentDepth - 1);
-            _gameManager.BitboardScript.UndoMove(move);
+            _gameManager.BitboardScript.UndoMove();
 
             _gameManager.BitboardScript.CastlingRights = oldCastlingRights;
             _gameManager.BitboardScript.EnPassantMask = oldEnPassantMask;

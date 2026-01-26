@@ -5,6 +5,9 @@ public class NegaMax
     Bitboards bitboard;
     Evaluation evaluator;
 
+    private int _searchDepth;
+    private const int CHECKMATE = 50000;
+
     public NegaMax(Bitboards board)
     {
         bitboard = board;
@@ -28,7 +31,7 @@ public class NegaMax
 
             int eval = -Search(depth - 1);
 
-            bitboard.UndoMove(move);
+            bitboard.UndoMove();
 
             if (eval > maxEval)
             {
@@ -40,11 +43,6 @@ public class NegaMax
     }
     private int Search(int depth)
     {
-        if(depth == 0)
-        {
-            return evaluator.Evaluate(bitboard);
-        }
-
         CustomMovesList possibleMoves = new CustomMovesList();
         bitboard.GenerateLegalMoves(possibleMoves);
 
@@ -54,10 +52,18 @@ public class NegaMax
             if(bitboard.IsInCheck())
             {
                 //checkmate
-                return int.MinValue;
+                //dist used to prefer faster checkmates
+                int dist = (_searchDepth - depth);
+                int mateScore = -CHECKMATE + dist;
+                return mateScore;
             }
             //stalemate
             return 0;
+        }
+
+        if(depth == 0)
+        {
+            return evaluator.Evaluate(bitboard);
         }
 
         int maxEval = int.MinValue;
@@ -68,7 +74,7 @@ public class NegaMax
             bitboard.MakeMove(move);
             int eval = -Search(depth - 1);
             maxEval = Mathf.Max(maxEval, eval);
-            bitboard.UndoMove(move);
+            bitboard.UndoMove();
         }
         return maxEval;
     }

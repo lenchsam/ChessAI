@@ -719,6 +719,7 @@ public class Bitboards
     #region search methods
     public bool IsInCheck()
     {
+        //assumes AI is always black
         int kingSquare = GetKingSquare(_isWhiteTurn);
         return IsSquareAttacked(kingSquare, !_isWhiteTurn);
     }
@@ -740,13 +741,12 @@ public class Bitboards
         }
         else if (capturedPiece != Piece.None)
         {
-            Debug.Log(capturedPiece);
             _bitboards[(int)capturedPiece] &= ~toBit;
         }
 
 
         //save history
-        _gameStateHistory.Push(new GameState(capturedPiece, CastlingRights, EnPassantMask));
+        _gameStateHistory.Push(new GameState(move, capturedPiece, CastlingRights, EnPassantMask));
 
         CheckCastlingRights(movingPiece, move.StartingPos);
 
@@ -806,8 +806,9 @@ public class Bitboards
         _isWhiteTurn = !_isWhiteTurn;
     }
 
-    public void UndoMove(Move move)
+    public void UndoMove()
     {
+        Move move = _gameStateHistory.Peek()._Move;
         _isWhiteTurn = !_isWhiteTurn;
 
         //get old state
@@ -827,7 +828,6 @@ public class Bitboards
         }
         else
         {
-            Debug.Log("moved piece = " + movedPiece);
             //for non promotion moves remove from destination square
             _bitboards[(int)movedPiece] &= ~toBit;
         }
