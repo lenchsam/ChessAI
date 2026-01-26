@@ -15,3 +15,4 @@ public struct GameState
         EnPassantMask = enPassantMask;
     }
 }
+

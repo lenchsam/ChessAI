@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Events;
 
 public struct Move
@@ -142,22 +141,11 @@ public class Bitboards
     // two hex digits (8 bits/1 byte) represents each row
     private ulong[] _bitboards = new ulong[12];
     private ulong _whitePiecesBB, _blackPiecesBB, _allPiecesBB;
-
     
     bool _isWhiteTurn = true;
 
     //used for fast lookups of which piece is on which square
     private Piece[] _boardSquares = new Piece[64];
-
-    //FEN character to piece index
-    private Dictionary<char, int> _fenToPiece = new Dictionary<char, int>() {
-    {'P', (int)Piece.WhitePawn},   {'N', (int)Piece.WhiteKnight},
-    {'B', (int)Piece.WhiteBishop}, {'R', (int)Piece.WhiteRook},
-    {'Q', (int)Piece.WhiteQueen},  {'K', (int)Piece.WhiteKing},
-    {'p', (int)Piece.BlackPawn},   {'n', (int)Piece.BlackKnight},
-    {'b', (int)Piece.BlackBishop}, {'r', (int)Piece.BlackRook},
-    {'q', (int)Piece.BlackQueen},  {'k', (int)Piece.BlackKing}
-    };
 
     private CustomMovesList _currentLegalMoves = new CustomMovesList();
 
@@ -182,7 +170,16 @@ public class Bitboards
         _allPiecesBB = 0UL;
 
     }
+    public void FENtoBitboards(string FEN)
+    {
+        ResetGame();
 
+        FENParser.FENtoBitboards(FEN, _bitboards, _boardSquares,
+                           ref _isWhiteTurn, ref CastlingRights, ref EnPassantMask);
+
+        UpdateTotalBitboards();
+        GenerateLegalMoves(_currentLegalMoves);
+    }
     public Material GetMaterialForColour(bool isWhite)
     {
         ulong pawns = _bitboards[isWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
@@ -206,51 +203,6 @@ public class Bitboards
     public void SetTurn(bool isWhite)
     {
         _isWhiteTurn = isWhite;
-    }
-
-    public void FENtoBitboards(string FEN)
-    {
-        ResetGame();
-
-        int row = 7;
-        int col = 0;
-
-        for (int i = 0; i < 64; i++) _boardSquares[i] = Piece.None;
-
-        foreach (char c in FEN)
-        {
-            //done so it doesnt go into turn data.
-            if (c == ' ') break;
-
-            if (char.IsDigit(c))
-            {
-                //empty squares
-                col += (c - '0');
-            }
-            else if (c == '/')
-            {
-                //new row
-                row--;
-                col = 0;
-            }
-            else
-            {
-                if (_fenToPiece.ContainsKey(c))
-                {
-                    int pieceIndex = _fenToPiece[c];
-                    int squareIndex = row * 8 + col; // 0 to 63
-                    ulong squareBit = 1UL << squareIndex;
-
-                    _bitboards[pieceIndex] |= squareBit;
-
-                    _boardSquares[squareIndex] = (Piece)pieceIndex;
-                }
-                col++;
-            }
-        }
-        UpdateTotalBitboards();
-
-        GenerateLegalMoves(_currentLegalMoves);
     }
 
     public Piece GetPieceOnSquare(int squareIndex)
@@ -520,8 +472,6 @@ public class Bitboards
         CustomMovesList pseudoMoves = new CustomMovesList();
 
         //get correct bitboards based on turn
-
-
         Material mat = GetMaterialForColour(_isWhiteTurn);
         MoveGenerator.GeneratePseudoLegalMoves(
             mat,

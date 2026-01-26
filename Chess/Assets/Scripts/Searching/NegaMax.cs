@@ -18,9 +18,6 @@ public class NegaMax
         CustomMovesList possibleMoves = new CustomMovesList();
         bitboard.GenerateLegalMoves(possibleMoves);
 
-        //get random moves first
-        //return possibleMoves.Moves[Random.Range(0, possibleMoves.Length)];
-
         Move bestMove = new Move();
         int maxEval = int.MinValue;
 
@@ -63,6 +60,7 @@ public class NegaMax
 
         if(depth == 0)
         {
+            //TODO: quiescence search
             return evaluator.Evaluate(bitboard);
         }
 

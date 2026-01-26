@@ -5,8 +5,10 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public Bitboards BitboardScript;
-    public Evaluation Eval;
+    //public get, private set
+    //allow other scripts to read but not modify
+    public Bitboards BitboardScript { get; private set; }
+    public Evaluation Eval { get; private set; }
     [SerializeField] private Board _board;
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private BoardSettings _boardSettings;

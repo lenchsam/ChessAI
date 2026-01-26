@@ -2020,15 +2020,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54546a6d52e44b5498432a8f88e743f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BitboardScript:
-    MovingPieceEvent:
-      m_PersistentCalls:
-        m_Calls: []
-    GameEnded:
-      m_PersistentCalls:
-        m_Calls: []
-    CastlingRights: 15
-    EnPassantMask: 0
   _board: {fileID: 1777018107}
   _playerController: {fileID: 1585080427}
   _boardSettings: {fileID: 11400000, guid: cad2fd750b8e449468232badd263c437, type: 2}
@@ -2038,7 +2029,7 @@ MonoBehaviour:
   _rookPromotion: {fileID: 1442432784}
   _bishopPromotion: {fileID: 1874963391}
   _knightPromotion: {fileID: 2055098322}
-  _searchDepth: 4
+  _searchDepth: 3
   _isAiEnabled: 1
   OnMoveRequested:
     m_PersistentCalls:
