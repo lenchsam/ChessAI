@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 public class NegaMax
 {
@@ -93,5 +94,37 @@ public class NegaMax
             }
         }
         return alpha;
+    }
+
+    private int QuiescenceSearch(int alpha, int beta)
+    {
+        int staticEval = evaluator.Evaluate(bitboard);
+
+        int bestValue = staticEval;
+        if(bestValue >= beta)
+        {
+            return bestValue;
+        }
+        if (bestValue > alpha)
+        {
+            alpha = bestValue;
+        }
+
+        //get all capture moves
+        //while still have capture moves to look at
+        //makemove
+        //score = -QuiescenceSearch(-alpha, -beta)
+        //undomove
+        //
+        //if (score >= beta)
+        //{
+        //    return score;
+        //}
+        //if (score > alpha)
+        //{
+        //    alpha = score;
+        //}
+
+        return bestValue;
     }
 }

@@ -511,7 +511,7 @@ public class Bitboards
         if ((kingAttacks & enemyKing) != 0) return true;
 
         //pawns
-        ulong pawnAttacks = byWhite ? MoveGenerator.WhitePawnLookup[square] : MoveGenerator.BlackPawnLookup[square];
+        ulong pawnAttacks = byWhite ? MoveGenerator.BlackPawnLookup[square] : MoveGenerator.WhitePawnLookup[square];
         ulong enemyPawns = _bitboards[byWhite ? (int)Piece.WhitePawn : (int)Piece.BlackPawn];
         if ((pawnAttacks & enemyPawns) != 0) return true;
 
