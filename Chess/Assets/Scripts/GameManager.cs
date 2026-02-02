@@ -7,7 +7,8 @@ public enum AiSide
 {
     None,
     Black,
-    White
+    White,
+    Both
 }
 public class GameManager : MonoBehaviour
 {
@@ -157,6 +158,7 @@ public class GameManager : MonoBehaviour
         if (_aiSide == AiSide.None) return false;
         if (_aiSide == AiSide.White && isWhiteTurn) return true;
         if (_aiSide == AiSide.Black && !isWhiteTurn) return true;
+        if (_aiSide == AiSide.Both) return true;
         return false;
     }
 

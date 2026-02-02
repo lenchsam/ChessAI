@@ -49,8 +49,8 @@ public class NegaMax
     {
         if (depth == 0)
         {
-            //TODO: quiescence search
-            return evaluator.Evaluate(bitboard);
+            return QuiescenceSearch(alpha, beta);
+            //return evaluator.Evaluate(bitboard);
         }
 
         CustomMovesList possibleMoves = new CustomMovesList();
@@ -100,31 +100,42 @@ public class NegaMax
     {
         int staticEval = evaluator.Evaluate(bitboard);
 
-        int bestValue = staticEval;
-        if(bestValue >= beta)
+        //if static evaluation already >= beta no need to search captures
+        if (staticEval >= beta)
         {
-            return bestValue;
-        }
-        if (bestValue > alpha)
-        {
-            alpha = bestValue;
+            return staticEval;
         }
 
-        //get all capture moves
-        //while still have capture moves to look at
-        //makemove
-        //score = -QuiescenceSearch(-alpha, -beta)
-        //undomove
-        //
-        //if (score >= beta)
-        //{
-        //    return score;
-        //}
-        //if (score > alpha)
-        //{
-        //    alpha = score;
-        //}
+        if (staticEval > alpha)
+        {
+            alpha = staticEval;
+        }
 
-        return bestValue;
+        CustomMovesList movesList = new CustomMovesList();
+        bitboard.GenerateLegalMoves(movesList, true);
+
+        for (int i = 0; i < movesList.Length; i++)
+        {
+            Move move = movesList.Moves[i];
+
+            bitboard.MakeMove(move);
+            int score = -QuiescenceSearch(-beta, -alpha);
+            bitboard.UndoMove();
+
+            //beta cutoff
+            if (score >= beta)
+            {
+                return score;
+            }
+            
+            //found better move
+            if (score > alpha)
+            {
+                alpha = score;
+            }
+        }
+
+        //return the best score found
+        return alpha;
     }
 }
