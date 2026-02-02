@@ -30,19 +30,18 @@ public static class MoveGenerator
         bool isWhiteTurn, 
         ushort enPassantMask,
         Castling castlingRights,
-        CustomMovesList moveList,
-        bool captureMovesOnly = false)
+        CustomMovesList moveList)
     {
         //non sliding pieces
-        GenerateKnightMoves(playerMaterial.Knights, ownPieces, enemyPieces, moveList, captureMovesOnly);
-        GenerateKingMoves(playerMaterial.King, ownPieces, enemyPieces, moveList, castlingRights, allPieces, captureMovesOnly);
-        GeneratePawnMoves(playerMaterial.Pawns, allPieces, enemyPieces, isWhiteTurn, moveList, enPassantMask, captureMovesOnly);
+        GenerateKnightMoves(playerMaterial.Knights, ownPieces, enemyPieces, moveList);
+        GenerateKingMoves(playerMaterial.King, ownPieces, enemyPieces, moveList, castlingRights, allPieces);
+        GeneratePawnMoves(playerMaterial.Pawns, allPieces, enemyPieces, isWhiteTurn, moveList, enPassantMask);
 
         //sliding pieces
         //doesnt matter if white or black piece type as attacks are the same
-        GenerateSlidingMoves(playerMaterial.Bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList, captureMovesOnly);
-        GenerateSlidingMoves(playerMaterial.Rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList, captureMovesOnly);
-        GenerateSlidingMoves(playerMaterial.Queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList, captureMovesOnly);
+        GenerateSlidingMoves(playerMaterial.Bishops, Piece.WhiteBishop, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(playerMaterial.Rooks, Piece.WhiteRook, allPieces, ownPieces, enemyPieces, moveList);
+        GenerateSlidingMoves(playerMaterial.Queens, Piece.WhiteQueen, allPieces, ownPieces, enemyPieces, moveList);
     }
 #endregion
 
@@ -351,7 +350,7 @@ public static class MoveGenerator
             BlackPawnLookup[squareIndex] = blackAttacks;
         }
     }
-    private static void GenerateSlidingMoves(ulong pieces, Piece pieceType, ulong allPieces, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, bool captureMovesOnly = false)
+    private static void GenerateSlidingMoves(ulong pieces, Piece pieceType, ulong allPieces, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
     {
         while (pieces != 0)
         {
@@ -367,9 +366,8 @@ public static class MoveGenerator
 
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
+                // Use Code 4 (Capture) or Code 0 (Quiet)
                 int flag = isCapture ? MoveFlag.Capture : MoveFlag.None;
-
-                if (captureMovesOnly == true && flag == MoveFlag.None) continue;
 
                 moveList.Add(new Move(fromSquare, toSquare, flag));
             }
@@ -377,7 +375,7 @@ public static class MoveGenerator
     }
 
     //pseudo legal knight moves
-    private static void GenerateKnightMoves(ulong knights, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, bool captureMovesOnly = false)
+    private static void GenerateKnightMoves(ulong knights, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList)
     {
         while (knights != 0)
         {
@@ -397,17 +395,13 @@ public static class MoveGenerator
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
                 int flag = isCapture ? MoveFlag.Capture : MoveFlag.None;
-
-                //if we only want capture moves and the move isnt a capture, then move on to next possible move
-                if (captureMovesOnly == true && flag == MoveFlag.None) continue;
-
                 moveList.Add(new Move(fromSquare, toSquare, flag));
             }
         }
     }
 
     //pseudo legal king moves 
-    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, Castling castlingRights, ulong allPieces, bool captureMovesOnly = false)
+    private static void GenerateKingMoves(ulong kings, ulong ownPieces, ulong enemyPieces, CustomMovesList moveList, Castling castlingRights, ulong allPieces)
     {
         while (kings != 0)
         {
@@ -425,22 +419,15 @@ public static class MoveGenerator
                 bool isCapture = (enemyPieces & (1UL << toSquare)) != 0;
 
                 int flag = isCapture ? MoveFlag.Capture : MoveFlag.None;
-
-                //if we only want capture moves and the move isnt a capture, then move on to next possible move
-                if (captureMovesOnly == true && flag == MoveFlag.None) continue;
-
                 moveList.Add(new Move(fromSquare, toSquare, flag));
             }
 
-            GenerateCastlingMoves(fromSquare, moveList, castlingRights, allPieces, captureMovesOnly);
+            GenerateCastlingMoves(fromSquare, moveList, castlingRights, allPieces);
         }
     }
 
-    private static void GenerateCastlingMoves(int kingSquare, CustomMovesList moveList, Castling castlingRights, ulong allPieces, bool captureMovesOnly = false)
+    private static void GenerateCastlingMoves(int kingSquare, CustomMovesList moveList, Castling castlingRights, ulong allPieces)
     {
-        //castling is a quiet move, if we only want captures then we dont want to generate castling moves
-        if (captureMovesOnly == true) return;
-
         bool isWhite = kingSquare == 4;
         bool isBlack = kingSquare == 60;
 
@@ -498,7 +485,7 @@ public static class MoveGenerator
     }
 
     //pseudo legal pawn moves
-    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList, ushort enPassantFlag, bool captureMovesOnly = false)
+    private static void GeneratePawnMoves(ulong pawns, ulong allPieces, ulong enemyPieces, bool isWhite, CustomMovesList moveList, ushort enPassantFlag)
     {
         ulong emptySquares = ~allPieces;
 
@@ -522,14 +509,11 @@ public static class MoveGenerator
             ulong quietPush = singlePush & notRank8;
             ulong promotionPush = singlePush & rank8Mask;
 
-            if (captureMovesOnly == false)
-            {
-                GetMovesFromBitboard(quietPush, 8, MoveFlag.None, moveList);  //single push, no promotion
-                AddPromotionMoves(promotionPush, 8, false, moveList);
+            GetMovesFromBitboard(quietPush, 8, MoveFlag.None, moveList);  //single push, no promotion
+            AddPromotionMoves(promotionPush, 8, false, moveList);
 
-                //cannot promote from double push so no need to account for it here
-                GetMovesFromBitboard(doublePush, 16, MoveFlag.PawnDoublePush, moveList); //double push
-            }
+            //cannot promote from double push so no need to account for it here
+            GetMovesFromBitboard(doublePush, 16, MoveFlag.PawnDoublePush, moveList); //double push
 
             ulong captureLeft = ((pawns & notAFile) << 7) & enemyPieces;
             ulong captureRight = ((pawns & notHFile) << 9) & enemyPieces;
@@ -579,14 +563,11 @@ public static class MoveGenerator
             ulong quietPush = singlePush & notRank1;
             ulong promotionPush = singlePush & rank1Mask;
 
-            if (captureMovesOnly == false)
-            {
-                GetMovesFromBitboard(quietPush, -8, MoveFlag.None, moveList);  //single push, no promotion
-                AddPromotionMoves(promotionPush, -8, false, moveList);
+            GetMovesFromBitboard(quietPush, -8, MoveFlag.None, moveList);  //single push, no promotion
+            AddPromotionMoves(promotionPush, -8, false, moveList);
 
-                //cannot promote from double push so no need to account for it here
-                GetMovesFromBitboard(doublePush, -16, MoveFlag.PawnDoublePush, moveList); //double push
-            }
+            //cannot promote from double push so no need to account for it here
+            GetMovesFromBitboard(doublePush, -16, MoveFlag.PawnDoublePush, moveList); //double push
 
             //right for black is left for the white POV
             ulong captureRight = ((pawns & notHFile) >> 7) & enemyPieces;

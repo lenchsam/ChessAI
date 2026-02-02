@@ -466,9 +466,8 @@ public class Bitboards
         return -1;
     }
     //public for perft test
-    public int GenerateLegalMoves(CustomMovesList moves, bool capturesOnly = false)
+    public int GenerateLegalMoves(CustomMovesList moves)
     {
-        //TODO: make captures only work
         moves.Clear();
         CustomMovesList pseudoMoves = new CustomMovesList();
 
@@ -482,8 +481,7 @@ public class Bitboards
             _isWhiteTurn,
             EnPassantMask,
             CastlingRights,
-            pseudoMoves,
-            capturesOnly
+            pseudoMoves
         );
 
         for (int i = 0; i < pseudoMoves.Length; i++)
