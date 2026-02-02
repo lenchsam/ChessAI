@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
 
 public class NegaMax
 {
@@ -8,30 +7,41 @@ public class NegaMax
 
     private int _searchDepth;
     private const int CHECKMATE = 50000;
+    private const int MAX_PLY = 64;
+
+    private CustomMovesList[] moveLists;
 
     public NegaMax(Bitboards board)
     {
         bitboard = board;
         evaluator = new Evaluation();
+
+        moveLists = new CustomMovesList[MAX_PLY];
+        for (int i = 0; i < MAX_PLY; i++)
+        {
+            moveLists[i] = new CustomMovesList();
+        }
     }
     public Move FindBestMove(int depth)
     {
         _searchDepth = depth;
-        CustomMovesList possibleMoves = new CustomMovesList();
+        CustomMovesList possibleMoves = moveLists[0];
+        possibleMoves.Clear();
+
         bitboard.GenerateLegalMoves(possibleMoves);
 
         Move bestMove = new Move();
         int maxEval = int.MinValue;
 
-        int alpha = -int.MaxValue;
-        int beta = int.MaxValue;
+        int alpha = -100000;
+        int beta = 100000;
 
         for (int i = 0; i < possibleMoves.Length; i++)
         {
             Move move = possibleMoves.Moves[i];
             bitboard.MakeMove(move);
 
-            int eval = -Search(depth - 1, -beta, -alpha);
+            int eval = -Search(depth - 1, -beta, -alpha, 1);
 
             bitboard.UndoMove();
 
@@ -45,13 +55,17 @@ public class NegaMax
         }
         return bestMove;
     }
-    CustomMovesList possibleMoves = new CustomMovesList();
-    private int Search(int depth, int alpha, int beta)
+
+    private int Search(int depth, int alpha, int beta, int ply)
     {
+        if (ply >= MAX_PLY) return evaluator.Evaluate(bitboard);
+
+        CustomMovesList possibleMoves = moveLists[ply];
         possibleMoves.Clear();
+
         if (depth == 0)
         {
-            return QuiescenceSearch(alpha, beta);
+            return QuiescenceSearch(alpha, beta, ply);
             //return evaluator.Evaluate(bitboard);
         }
 
@@ -78,7 +92,7 @@ public class NegaMax
         {
             Move move = possibleMoves.Moves[i];
             bitboard.MakeMove(move);
-            int eval = -Search(depth - 1, -beta, -alpha);
+            int eval = -Search(depth - 1, -beta, -alpha, ply + 1);
             maxEval = Mathf.Max(maxEval, eval);
             bitboard.UndoMove();
 
@@ -96,16 +110,16 @@ public class NegaMax
         }
         return alpha;
     }
-    CustomMovesList movesList = new CustomMovesList();
-    private int QuiescenceSearch(int alpha, int beta)
+    private int QuiescenceSearch(int alpha, int beta, int ply)
     {
-        movesList.Clear();
+        if (ply >= MAX_PLY) return evaluator.Evaluate(bitboard);
+
         int staticEval = evaluator.Evaluate(bitboard);
 
         //if static evaluation already >= beta no need to search captures
         if (staticEval >= beta)
         {
-            return staticEval;
+            return beta;
         }
 
         if (staticEval > alpha)
@@ -113,7 +127,9 @@ public class NegaMax
             alpha = staticEval;
         }
 
-        
+        CustomMovesList movesList = moveLists[ply];
+        movesList.Clear();
+
         bitboard.GenerateLegalMoves(movesList, true);
 
         for (int i = 0; i < movesList.Length; i++)
@@ -121,13 +137,13 @@ public class NegaMax
             Move move = movesList.Moves[i];
 
             bitboard.MakeMove(move);
-            int score = -QuiescenceSearch(-beta, -alpha);
+            int score = -QuiescenceSearch(-beta, -alpha, ply + 1);
             bitboard.UndoMove();
 
             //beta cutoff
             if (score >= beta)
             {
-                return score;
+                return beta;
             }
             
             //found better move
