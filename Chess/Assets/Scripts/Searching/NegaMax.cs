@@ -45,16 +45,15 @@ public class NegaMax
         }
         return bestMove;
     }
-    CustomMovesList possibleMoves = new CustomMovesList();
     private int Search(int depth, int alpha, int beta)
     {
-        possibleMoves.Clear();
         if (depth == 0)
         {
             return QuiescenceSearch(alpha, beta);
             //return evaluator.Evaluate(bitboard);
         }
 
+        CustomMovesList possibleMoves = new CustomMovesList();
         bitboard.GenerateLegalMoves(possibleMoves);
 
         if(possibleMoves.Length == 0)
@@ -96,10 +95,9 @@ public class NegaMax
         }
         return alpha;
     }
-    CustomMovesList movesList = new CustomMovesList();
+
     private int QuiescenceSearch(int alpha, int beta)
     {
-        movesList.Clear();
         int staticEval = evaluator.Evaluate(bitboard);
 
         //if static evaluation already >= beta no need to search captures
@@ -113,7 +111,7 @@ public class NegaMax
             alpha = staticEval;
         }
 
-        
+        CustomMovesList movesList = new CustomMovesList();
         bitboard.GenerateLegalMoves(movesList, true);
 
         for (int i = 0; i < movesList.Length; i++)
