@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class CustomMovesList
 {
     //this implementation works well with my code as a list is slower than an array,

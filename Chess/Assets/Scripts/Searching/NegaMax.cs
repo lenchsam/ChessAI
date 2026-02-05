@@ -5,6 +5,7 @@ public class NegaMax
 {
     Bitboards bitboard;
     Evaluation evaluator;
+    MoveOrdering moveOrderer;
 
     private int _searchDepth;
     private const int CHECKMATE = 50000;
@@ -13,6 +14,7 @@ public class NegaMax
     {
         bitboard = board;
         evaluator = new Evaluation();
+        moveOrderer = new MoveOrdering();
     }
     public Move FindBestMove(int depth)
     {
@@ -50,7 +52,6 @@ public class NegaMax
         if (depth == 0)
         {
             return QuiescenceSearch(alpha, beta);
-            //return evaluator.Evaluate(bitboard);
         }
 
         CustomMovesList possibleMoves = new CustomMovesList();
@@ -70,6 +71,8 @@ public class NegaMax
             //stalemate
             return 0;
         }
+
+        moveOrderer.OrderMoves(possibleMoves, bitboard);
 
         int maxEval = int.MinValue;
 
@@ -103,7 +106,7 @@ public class NegaMax
         //if static evaluation already >= beta no need to search captures
         if (staticEval >= beta)
         {
-            return staticEval;
+            return beta;
         }
 
         if (staticEval > alpha)
@@ -113,6 +116,8 @@ public class NegaMax
 
         CustomMovesList movesList = new CustomMovesList();
         bitboard.GenerateLegalMoves(movesList, true);
+
+        moveOrderer.OrderMoves(movesList, bitboard);
 
         for (int i = 0; i < movesList.Length; i++)
         {
@@ -125,7 +130,7 @@ public class NegaMax
             //beta cutoff
             if (score >= beta)
             {
-                return score;
+                return beta;
             }
             
             //found better move
