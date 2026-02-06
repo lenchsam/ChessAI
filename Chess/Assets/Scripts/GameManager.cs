@@ -32,20 +32,28 @@ public class GameManager : MonoBehaviour
     private int _pendingPromotionFrom;
     private int _pendingPromotionTo;
 
-    private NegaMax _negaMax;
+    private NegaMax _whiteEngine;
+    private NegaMax _blackEngine;
 
     [Header("AI Settings")]
     [Range(1, 6)]
-    [SerializeField] private int _searchDepth = 3;
-    [SerializeField] private AiSide _aiSide = AiSide.Black;
+    [SerializeField] private int _whiteDepth = 5;
+    [Range(1, 6)]
+    [SerializeField] private int _blackDepth = 5;
+    [SerializeField] private AiSide _aiSide = AiSide.Both;
+    private int whiteWins, blackWins, draws;
+    private TestingManager _testingManager;
 
     public UnityEvent<int, int> OnMoveRequested = new UnityEvent<int, int>();
     void Awake()
     {
+        _testingManager = FindObjectOfType<TestingManager>();
+
         BitboardScript = new Bitboards();
         Eval = new Evaluation();
 
-        _negaMax = new NegaMax(BitboardScript);
+        _whiteEngine = new NegaMax(BitboardScript);
+        _blackEngine = new NegaMax(BitboardScript);
 
         _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
         _visualiseBitboard.SetHighlightColour(_boardSettings.highlightColor);
@@ -53,6 +61,7 @@ public class GameManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        BitboardScript.GameEnded.AddListener(OnGameEnded);
         OnMoveRequested.AddListener(OnMoveRequestedHandler);
 
         _queenPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteQueen));
@@ -61,6 +70,21 @@ public class GameManager : MonoBehaviour
         _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));;
 
         RestartGame();
+    }
+
+    private void OnGameEnded(EndingState state, bool whiteWon)
+    {
+        if (state == EndingState.Checkmate)
+        {
+            if (whiteWon) 
+                whiteWins++;
+            else 
+                blackWins++;
+        }
+        else
+        {
+            draws++;
+        }
     }
 
     void OnMoveRequestedHandler(int from, int to)
@@ -96,9 +120,10 @@ public class GameManager : MonoBehaviour
 
         if (wasMoveMade)
         {
+            _testingManager?.OnMovePlayed();
+
             Piece visualPiece = Piece.None;
 
-            // Convert logic enum to visual enum
             if (promotionType != PawnPromotion.None)
             {
                 bool isWhite = (to >= 56);
@@ -133,7 +158,13 @@ public class GameManager : MonoBehaviour
         yield return null;
 
         //perform search
-        Move bestMove = _negaMax.FindBestMove(_searchDepth);
+        bool whiteToMove = BitboardScript.GetTurn();
+
+        NegaMax engine = whiteToMove ? _whiteEngine : _blackEngine;
+        int depth = whiteToMove ? _whiteDepth : _blackDepth;
+
+        Move bestMove = engine.FindBestMove(depth);
+
 
         //is valid move found
         if (bestMove.StartingPos != bestMove.EndingPos) 
