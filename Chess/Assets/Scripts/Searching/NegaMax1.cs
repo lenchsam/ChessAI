@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
 
-public class NegaMax : IChessEngine
+public class NegaMax1 : IChessEngine
 {
     Bitboards bitboard;
     Evaluation evaluator;
@@ -10,7 +9,7 @@ public class NegaMax : IChessEngine
     private int _searchDepth;
     private const int CHECKMATE = 50000;
 
-    public NegaMax(Bitboards board)
+    public NegaMax1(Bitboards board)
     {
         bitboard = board;
         evaluator = new Evaluation();
@@ -51,7 +50,7 @@ public class NegaMax : IChessEngine
     {
         if (depth == 0)
         {
-            return QuiescenceSearch(alpha, beta);
+            return evaluator.Evaluate(bitboard);
         }
 
         CustomMovesList possibleMoves = new CustomMovesList();
@@ -96,51 +95,6 @@ public class NegaMax : IChessEngine
                 alpha = eval;
             }
         }
-        return alpha;
-    }
-
-    private int QuiescenceSearch(int alpha, int beta)
-    {
-        int staticEval = evaluator.Evaluate(bitboard);
-
-        //if static evaluation already >= beta no need to search captures
-        if (staticEval >= beta)
-        {
-            return beta;
-        }
-
-        if (staticEval > alpha)
-        {
-            alpha = staticEval;
-        }
-
-        CustomMovesList movesList = new CustomMovesList();
-        bitboard.GenerateLegalMoves(movesList, true);
-
-        moveOrderer.OrderMoves(movesList, bitboard);
-
-        for (int i = 0; i < movesList.Length; i++)
-        {
-            Move move = movesList.Moves[i];
-
-            bitboard.MakeMove(move);
-            int score = -QuiescenceSearch(-beta, -alpha);
-            bitboard.UndoMove();
-
-            //beta cutoff
-            if (score >= beta)
-            {
-                return beta;
-            }
-            
-            //found better move
-            if (score > alpha)
-            {
-                alpha = score;
-            }
-        }
-
-        //return the best score found
         return alpha;
     }
 }

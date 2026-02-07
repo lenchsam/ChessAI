@@ -2029,7 +2029,7 @@ MonoBehaviour:
   _rookPromotion: {fileID: 1442432784}
   _bishopPromotion: {fileID: 1874963391}
   _knightPromotion: {fileID: 2055098322}
-  _whiteDepth: 1
+  _whiteDepth: 5
   _blackDepth: 5
   _aiSide: 3
   OnMoveRequested:
@@ -3541,7 +3541,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameManager: {fileID: 637657391}
-  gamesToRun: 10
+  gamesToRun: 2
 --- !u!4 &1443931408
 Transform:
   m_ObjectHideFlags: 0
