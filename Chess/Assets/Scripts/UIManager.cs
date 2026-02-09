@@ -23,7 +23,7 @@ public class UIManager : MonoBehaviour
     
     private void DisableGameUI()
     {
-        _bitboardSwitcher.SetActive(false);
+        //_bitboardSwitcher.SetActive(false);
     }
 
     //called on game restart
@@ -33,7 +33,7 @@ public class UIManager : MonoBehaviour
     }
     public void EnableGameUI()
     {
-        _bitboardSwitcher.SetActive(true);
+        //_bitboardSwitcher.SetActive(true);
     }
 
 

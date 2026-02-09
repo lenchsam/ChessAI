@@ -140,6 +140,8 @@ public class GameManager : MonoBehaviour
             {
                 StartCoroutine(PerformAiMove());
             }
+
+            SFXManager.Instance.PlaySound();
         }
         else
         {
