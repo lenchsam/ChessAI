@@ -120,6 +120,7 @@ public class GameManager : MonoBehaviour
 
         if (wasMoveMade)
         {
+            _visualiseBitboard.ShowBitboardOverlay(0);
             _testingManager?.OnMovePlayed();
 
             Piece visualPiece = Piece.None;
