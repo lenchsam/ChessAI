@@ -2031,7 +2031,7 @@ MonoBehaviour:
   _knightPromotion: {fileID: 2055098322}
   _whiteDepth: 5
   _blackDepth: 5
-  _aiSide: 1
+  _aiSide: 0
   OnMoveRequested:
     m_PersistentCalls:
       m_Calls: []

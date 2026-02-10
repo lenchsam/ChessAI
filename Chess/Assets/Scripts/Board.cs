@@ -134,6 +134,18 @@ public class Board : MonoBehaviour
             _pieceObjects[newSquare] = instance;
         }
 
+        if (moveFlag == MoveFlag.EnPassantCapture)
+        {
+            int capturedPawnOffset = (newSquare > oldSquare) ? -8 : 8;
+            int capturedPawnSquare = newSquare + capturedPawnOffset;
+
+            if (_pieceObjects[capturedPawnSquare] != null)
+            {
+                Destroy(_pieceObjects[capturedPawnSquare]);
+                _pieceObjects[capturedPawnSquare] = null;
+            }
+        }
+
         //castling
         if (moveFlag == MoveFlag.CastleKingSide)
         {
