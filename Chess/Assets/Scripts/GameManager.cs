@@ -103,6 +103,17 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        if(from == to)
+        {
+            //clicked on same square
+            //reset piece position
+            int fromX = from % 8;
+            int fromY = from / 8;
+            GameObject piece = _board.GetPieceFromPosition(from);
+            if (piece != null) piece.transform.position = new Vector2(fromX, fromY);
+            return;
+        }
+
         //normal move
         FinalizeMove(from, to, PawnPromotion.None);
     }
