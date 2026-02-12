@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using System.Threading.Tasks;
 
 public enum AiSide
 {
@@ -40,7 +41,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _whiteDepth = 5;
     [Range(1, 6)]
     [SerializeField] private int _blackDepth = 5;
-    [SerializeField] private AiSide _aiSide = AiSide.Both;
+    public AiSide _aiSide = AiSide.Both;
     private int whiteWins, blackWins, draws;
     private TestingManager _testingManager;
 
@@ -170,7 +171,7 @@ public class GameManager : MonoBehaviour
             bool isNewTurnWhite = BitboardScript.GetTurn();
             if (ShouldAiMove(isNewTurnWhite))
             {
-                StartCoroutine(PerformAiMove());
+                _ = PerformAiMove();
             }
 
             SFXManager.Instance.PlaySound();
@@ -186,10 +187,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private IEnumerator PerformAiMove()
+    private async Task PerformAiMove()
     {
-        //wait 1 frame so UI updates before searching
-        yield return null;
+        await Task.Yield();
 
         //perform search
         bool whiteToMove = BitboardScript.GetTurn();
@@ -197,7 +197,12 @@ public class GameManager : MonoBehaviour
         IChessEngine engine = whiteToMove ? (IChessEngine)_whiteEngine : (IChessEngine)_blackEngine;
         int depth = whiteToMove ? _whiteDepth : _blackDepth;
 
-        Move bestMove = engine.FindBestMove(depth);
+        //run search on separate thread to avoid freezing
+        Move bestMove = await Task.Run(() =>
+        {
+            return engine.FindBestMove(depth);
+        });
+
 
 
         //is valid move found
@@ -250,7 +255,7 @@ public class GameManager : MonoBehaviour
         //if AI plays white make the move
         if (ShouldAiMove(true))
         {
-            StartCoroutine(PerformAiMove());
+            _ = PerformAiMove();
         }
     }
 }

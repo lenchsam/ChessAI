@@ -52,7 +52,7 @@ public class DefaultState : IState
                 isWhitePiece = true;
             }
 
-            if (isWhitePiece == _playerController.IsPlayerWhite)
+            if (isWhitePiece == _playerController.IsPlayerWhite && _playerController.Game_Manager._aiSide != AiSide.Both)
             {
                 int newSquareIndex = (y * 8) + x;
                 _playerController.ChangeState(new PieceSelectedState(_playerController, newSquareIndex));
