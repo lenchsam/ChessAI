@@ -10,17 +10,12 @@ public class TestingManager : MonoBehaviour
 
     private int currentPlies;
 
-    void Start()
-    {
-        gameManager.BitboardScript.GameEnded.AddListener(OnGameEnded);
-    }
-
     public void BeginTest()
     {
         stats.Reset();
         currentPlies = 0;
 
-        Debug.Log("Starting engine test");
+        gameManager.BitboardScript.GameEnded.AddListener(OnGameEnded);
 
         gameManager.RestartGame();
     }

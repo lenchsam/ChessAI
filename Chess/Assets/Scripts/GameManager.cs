@@ -1,8 +1,8 @@
-using NUnit.Framework.Constraints;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+
 public enum AiSide
 {
     None,
@@ -67,11 +67,31 @@ public class GameManager : MonoBehaviour
         _queenPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteQueen));
         _rookPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteRook));
         _bishopPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteBishop));
-        _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));;
+        _knightPromotion.onClick.AddListener(() => OnPromotionButton(PawnPromotion.PromoteKnight));
+
+        _board.CreateBoard();
+    }
+    public void PlayBlack()
+    {
+        play(AiSide.White);
+    }
+
+    public void PlayWhite()
+    {
+        play(AiSide.Black);
+    }
+
+    public void PlayBoth()
+    {
+        play(AiSide.Both);
+    }
+
+    private void play(AiSide aiSide) {
+        _aiSide= aiSide;
 
         RestartGame();
     }
-
+    
     private void OnGameEnded(EndingState state, bool whiteWon)
     {
         if (state == EndingState.Checkmate)
@@ -225,7 +245,6 @@ public class GameManager : MonoBehaviour
         _playerController.IsPlayerWhite = true;
 
         BitboardScript.FENtoBitboards("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        _board.CreateBoard();
         _board.DisplayPieces(BitboardScript);
 
         //if AI plays white make the move
