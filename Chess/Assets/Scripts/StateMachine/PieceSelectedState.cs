@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PieceSelectedState : IState
@@ -30,6 +31,12 @@ public class PieceSelectedState : IState
     {
         Vector3 mouseScreenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
         Vector3 mouseWorld = _mainCamera.ScreenToWorldPoint(mouseScreenPos);
+
+        if (_selectedPiece == null)
+        {
+            _playerController.ChangeState(new DefaultState(_playerController));
+            return;
+        }
 
         _selectedPiece.transform.position = new Vector3(mouseWorld.x, mouseWorld.y, -2);
 

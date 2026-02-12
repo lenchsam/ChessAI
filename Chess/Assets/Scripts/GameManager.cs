@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     private int _pendingPromotionFrom;
     private int _pendingPromotionTo;
 
-    private NegaMax1 _whiteEngine;
+    private NegaMax _whiteEngine;
     private NegaMax _blackEngine;
 
     [Header("AI Settings")]
@@ -52,7 +52,7 @@ public class GameManager : MonoBehaviour
         BitboardScript = new Bitboards();
         Eval = new Evaluation();
 
-        _whiteEngine = new NegaMax1(BitboardScript);
+        _whiteEngine = new NegaMax(BitboardScript);
         _blackEngine = new NegaMax(BitboardScript);
 
         _board.SetBoardColour(_boardSettings.whiteColor, _boardSettings.blackColor);
